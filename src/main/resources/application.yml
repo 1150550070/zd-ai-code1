@@ -1,6 +1,12 @@
 spring:
   application:
     name: zd-ai-code-backend
+  datasource:
+    # mysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/hd_ai_code
+    username: root
+    password: 20040223tian
 server:
   port: 8123
   servlet:
