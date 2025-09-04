@@ -8,6 +8,8 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import App from './App.vue'
 import router from './router'
+import '@/access'
+
 
 // 设置dayjs为中文
 dayjs.locale('zh-cn')
