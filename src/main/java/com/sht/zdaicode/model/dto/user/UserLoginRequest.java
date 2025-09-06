@@ -1,4 +1,4 @@
-package com.sht.zdaicode.model.dto;
+package com.sht.zdaicode.model.dto.user;
 
 import lombok.Data;
 
