@@ -1,14 +1,14 @@
 {
-  "name": "zd-ai-code-frontend",
+  "name": "yu-ai-code-mother-frontend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
+    "openapi2ts": "openapi2ts",
     "preview": "vite preview",
     "build-only": "vite build",
-    "openapi2ts": "openapi2ts",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
@@ -16,7 +16,9 @@
   "dependencies": {
     "ant-design-vue": "^4.2.6",
     "axios": "^1.11.0",
-    "dayjs": "^1.11.18",
+    "@types/markdown-it": "^14.1.2",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"

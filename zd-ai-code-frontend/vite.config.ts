@@ -8,13 +8,11 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools({
-      launchEditor: 'D:\\WebStorm 2025.2.1\\bin\\webstorm64.exe',
-    }),
+    vueDevTools(),
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
 })

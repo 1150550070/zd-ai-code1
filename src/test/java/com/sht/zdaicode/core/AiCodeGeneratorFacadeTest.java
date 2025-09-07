@@ -20,13 +20,13 @@ class AiCodeGeneratorFacadeTest {
 
     @Test
     void generateAndSaveCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("写一个html页面，包含一个h1标题，标题内容为：hello world", CodeGenTypeEnum.HTML);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("写一个html页面，包含一个h1标题，标题内容为：hello world", CodeGenTypeEnum.HTML, 1L);
         Assertions.assertNotNull(file);
     }
 
     @Test
     void generateAndSaveCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("写一个html页面，包含一个h1标题，标题内容为：hello world", CodeGenTypeEnum.HTML);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("写一个html页面，包含一个h1标题，标题内容为：hello world", CodeGenTypeEnum.HTML, 1L);
         // 阻塞式获取所有代码
         List<String> result = codeStream.collectList().block();
         Assertions.assertNotNull(result);

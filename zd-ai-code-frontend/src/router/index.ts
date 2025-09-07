@@ -3,58 +3,47 @@ import HomePage from '@/pages/HomePage.vue'
 import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
 import UserManagePage from '@/pages/admin/UserManagePage.vue'
-import ACCESS_ENUM from '@/access/accessEnum'
+import AppManagePage from '@/pages/admin/AppManagePage.vue'
+import AppChatPage from '@/pages/app/AppChatPage.vue'
+import AppEditPage from '@/pages/app/AppEditPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: '主页',
       component: HomePage,
-      meta: {
-        access: ACCESS_ENUM.NOT_LOGIN,
-      },
     },
     {
       path: '/user/login',
       name: '用户登录',
       component: UserLoginPage,
-      meta: {
-        access: ACCESS_ENUM.NOT_LOGIN,
-      },
     },
     {
       path: '/user/register',
       name: '用户注册',
       component: UserRegisterPage,
-      meta: {
-        access: ACCESS_ENUM.NOT_LOGIN,
-      },
     },
     {
       path: '/admin/userManage',
       name: '用户管理',
       component: UserManagePage,
-      meta: {
-        access: ACCESS_ENUM.ADMIN,
-      },
     },
     {
-      path: '/noAuth',
-      name: '无权限',
-      component: () => import('@/pages/NoAuthPage.vue'),
-      meta: {
-        access: ACCESS_ENUM.NOT_LOGIN,
-      },
+      path: '/admin/appManage',
+      name: '应用管理',
+      component: AppManagePage,
     },
     {
-      path: '/user/profile',
-      name: '个人中心',
-      component: () => import('@/pages/user/UserProfilePage.vue'),
-      meta: {
-        access: ACCESS_ENUM.USER,
-      },
+      path: '/app/chat/:id',
+      name: '应用对话',
+      component: AppChatPage,
+    },
+    {
+      path: '/app/edit/:id',
+      name: '编辑应用',
+      component: AppEditPage,
     },
   ],
 })
