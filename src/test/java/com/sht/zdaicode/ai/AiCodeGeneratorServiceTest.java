@@ -30,8 +30,17 @@ class AiCodeGeneratorServiceTest {
     }
 
     @Test
-    void generateMultiFileCode() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("我是大学生我叫王旭莹,你可以叫我莹莹大王,生成一个简单的个人主页,不超过300行", CodeGenTypeEnum.MULTI_FILE);
-        Assertions.assertNotNull(codeStream);
+    void testChatMemory() {
+        HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode( "做个程序员鱼皮的工具网站，总代码量不超过 20 行");
+        Assertions.assertNotNull(result);
+        result = aiCodeGeneratorService.generateHtmlCode( "不要生成网站，告诉我你刚刚做了什么？");
+        Assertions.assertNotNull(result);
+        result = aiCodeGeneratorService.generateHtmlCode( "做个程序员鱼皮的工具网站，总代码量不超过 20 行");
+        Assertions.assertNotNull(result);
+        result = aiCodeGeneratorService.generateHtmlCode( "不要生成网站，告诉我你刚刚做了什么？");
+        Assertions.assertNotNull(result);
     }
+
+
+
 }

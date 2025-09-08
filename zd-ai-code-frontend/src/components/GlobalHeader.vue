@@ -52,7 +52,7 @@ import { computed, h, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { type MenuProps, message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
-import { userLogout } from '@/api/userController.ts'
+import { logout } from '@/api/userController.ts'
 import { LogoutOutlined, HomeOutlined } from '@ant-design/icons-vue'
 
 const loginUserStore = useLoginUserStore()
@@ -114,7 +114,7 @@ const handleMenuClick: MenuProps['onClick'] = (e) => {
 
 // 退出登录
 const doLogout = async () => {
-  const res = await userLogout()
+  const res = await logout()
   if (res.data.code === 0) {
     loginUserStore.setLoginUser({
       userName: '未登录',
