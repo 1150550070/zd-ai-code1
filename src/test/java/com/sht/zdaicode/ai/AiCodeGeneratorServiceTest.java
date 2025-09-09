@@ -1,19 +1,12 @@
 package com.sht.zdaicode.ai;
 
 import com.sht.zdaicode.ai.model.HtmlCodeResult;
-import com.sht.zdaicode.ai.model.MultiFileCodeResult;
 import com.sht.zdaicode.core.AiCodeGeneratorFacade;
-import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import reactor.core.publisher.Flux;
-
-import java.io.File;
 
 @SpringBootTest
 class AiCodeGeneratorServiceTest {
