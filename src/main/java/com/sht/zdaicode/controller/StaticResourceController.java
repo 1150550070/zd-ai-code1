@@ -19,42 +19,80 @@ import java.io.File;
 @RequestMapping("/static")
 public class StaticResourceController {
 
-    // 应用生成根目录（用于浏览）
-    private static final String PREVIEW_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
-
     /**
-     * 提供静态资源访问，支持目录重定向
+     * 提供部署后的静态资源访问
      * 访问格式：http://localhost:8123/api/static/{deployKey}[/{fileName}]
      */
     @GetMapping("/{deployKey}/**")
-    public ResponseEntity<Resource> serveStaticResource(
+    public ResponseEntity<Resource> serveDeployedResource(
             @PathVariable String deployKey,
             HttpServletRequest request) {
+        return serveStaticResource(deployKey, request, AppConstant.CODE_DEPLOY_ROOT_DIR);
+    }
+
+    /**
+     * 提供预览静态资源访问（用于应用生成后的预览）
+     * 访问格式：http://localhost:8123/api/static/preview/{appKey}[/{fileName}]
+     */
+    @GetMapping("/preview/{appKey}/**")
+    public ResponseEntity<Resource> servePreviewResource(
+            @PathVariable String appKey,
+            HttpServletRequest request) {
+        return serveStaticResource(appKey, request, AppConstant.CODE_OUTPUT_ROOT_DIR);
+    }
+
+    /**
+     * 通用静态资源服务方法
+     */
+    private ResponseEntity<Resource> serveStaticResource(
+            String resourceKey,
+            HttpServletRequest request,
+            String rootDir) {
         try {
             // 获取资源路径
             String resourcePath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-            resourcePath = resourcePath.substring(("/static/" + deployKey).length());
+            
+            // 根据请求路径确定前缀
+            String prefix = "/static/";
+            if (resourcePath.contains("/preview/")) {
+                prefix = "/static/preview/";
+            }
+            
+            resourcePath = resourcePath.substring((prefix + resourceKey).length());
+            
             // 如果是目录访问（不带斜杠），重定向到带斜杠的URL
             if (resourcePath.isEmpty()) {
                 HttpHeaders headers = new HttpHeaders();
                 headers.add("Location", request.getRequestURI() + "/");
                 return new ResponseEntity<>(headers, HttpStatus.MOVED_PERMANENTLY);
             }
+            
             // 默认返回 index.html
             if (resourcePath.equals("/")) {
                 resourcePath = "/index.html";
             }
+            
             // 构建文件路径
-            String filePath = PREVIEW_ROOT_DIR + "/" + deployKey + resourcePath;
+            String filePath = rootDir + "/" + resourceKey + resourcePath;
             File file = new File(filePath);
+            
             // 检查文件是否存在
             if (!file.exists()) {
                 return ResponseEntity.notFound().build();
             }
+            
             // 返回文件资源
             Resource resource = new FileSystemResource(file);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", getContentTypeWithCharset(filePath));
+            
+            // 添加CORS头部支持跨域访问
+            headers.add("Access-Control-Allow-Origin", "*");
+            headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            headers.add("Access-Control-Allow-Headers", "*");
+            
             return ResponseEntity.ok()
-                    .header("Content-Type", getContentTypeWithCharset(filePath))
+                    .headers(headers)
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

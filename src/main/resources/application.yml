@@ -23,6 +23,16 @@ spring:
 
   profiles:
     active: local
+
+# 阿里云OSS对象存储配置
+oss:
+  client:
+    host: oss-cn-beijing.aliyuncs.com
+    accessKeyId: LTAI5t5Zev6gad9dZh9MzeHH
+    accessKeySecret: 85FVI0zZQS1GVRaeQ6bcPXlDuexgJa
+    region: oss-cn-beijing
+    bucket: hd-ai0223
+
 server:
   port: 8123
   servlet:
