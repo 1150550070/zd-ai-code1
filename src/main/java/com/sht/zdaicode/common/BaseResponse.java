@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 @Data
 public class BaseResponse<T> implements Serializable {
+    //Serializable - 支持序列化，便于网络传输和缓存
 
     private int code;
 

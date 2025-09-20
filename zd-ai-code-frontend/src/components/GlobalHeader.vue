@@ -129,28 +129,141 @@ const doLogout = async () => {
 
 <style scoped>
 .header {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
   padding: 0 24px;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 20px rgba(102, 126, 234, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(165, 180, 252, 0.4), transparent);
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.header-left:hover {
+  transform: translateY(-1px);
 }
 
 .logo {
   height: 48px;
   width: 48px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .site-title {
   margin: 0;
-  font-size: 18px;
-  color: #1890ff;
+  font-size: 20px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+}
+
+.site-title:hover {
+  transform: translateX(2px);
 }
 
 .ant-menu-horizontal {
   border-bottom: none !important;
+  background: transparent !important;
+}
+
+.user-login-status {
+  display: flex;
+  align-items: center;
+}
+
+/* 美化登录按钮 */
+:deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, #a5b4fc 0%, #c7d2fe 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 4px 20px;
+  height: auto;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(165, 180, 252, 0.25);
+  transition: all 0.3s ease;
+  color: #4338ca;
+}
+
+:deep(.ant-btn-primary:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(165, 180, 252, 0.35);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  color: white;
+}
+
+/* 美化用户头像区域 */
+:deep(.ant-avatar) {
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-avatar:hover) {
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+/* 美化菜单项 */
+:deep(.ant-menu-item) {
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-menu-item:hover) {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+}
+
+:deep(.ant-menu-item-selected) {
+  background: rgba(102, 126, 234, 0.15) !important;
+  color: #667eea !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .site-title {
+    font-size: 16px;
+  }
+
+  .logo {
+    height: 40px;
+    width: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-title {
+    display: none; /* 在小屏幕上隐藏标题 */
+  }
 }
 </style>

@@ -2,6 +2,7 @@ package com.sht.zdaicode.controller;
 
 import com.sht.zdaicode.constant.AppConstant;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.File;
 
+@Slf4j
 @RestController
 @RequestMapping("/static")
 public class StaticResourceController {
@@ -81,8 +83,26 @@ public class StaticResourceController {
                 return ResponseEntity.notFound().build();
             }
             
+            // 检查文件是否可读（避免访问被锁定的文件）
+            if (!file.canRead()) {
+                log.warn("文件被锁定或无法读取: {}", filePath);
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .header("Retry-After", "5")
+                        .build();
+            }
+            
             // 返回文件资源
-            Resource resource = new FileSystemResource(file);
+            Resource resource;
+            try {
+                resource = new FileSystemResource(file);
+                // 尝试获取输入流以验证文件可访问性
+                resource.getInputStream().close();
+            } catch (Exception e) {
+                log.warn("文件访问异常: {}, 错误: {}", filePath, e.getMessage());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .header("Retry-After", "5")
+                        .build();
+            }
             HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Type", getContentTypeWithCharset(filePath));
             

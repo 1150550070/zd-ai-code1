@@ -2,36 +2,29 @@ spring:
   application:
     name: zd-ai-code-backend
   datasource:
-    # mysql
+    # mysql - 敏感信息已移至application-local.yml
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/hd_ai_code
-    username: root
-    password: 20040223tian
-  # redis
+    # url, username, password 在 application-local.yml 中配置
+  # redis - 敏感信息已移至application-local.yml
   data:
     redis:
-      host: 192.168.100.128
+      # host, username, password 在 application-local.yml 中配置
       port: 6379
-      username: default
-      password: "20040223tian"
       ttl: 3600
   session:
     store-type: redis
     timeout: 2592000
 
-
-
   profiles:
     active: local
 
-# 阿里云OSS对象存储配置
+# 阿里云OSS对象存储配置 - 敏感信息已移至application-local.yml
 oss:
   client:
     host: oss-cn-beijing.aliyuncs.com
-    accessKeyId: LTAI5t5Zev6gad9dZh9MzeHH
-    accessKeySecret: 85FVI0zZQS1GVRaeQ6bcPXlDuexgJa
     region: oss-cn-beijing
     bucket: hd-ai0223
+    # accessKeyId, accessKeySecret 在 application-local.yml 中配置
 
 server:
   port: 8123
@@ -40,22 +33,19 @@ server:
     session:
       cookie:
         max-age: 2592000
-# springdoc-openapi????
+
+# springdoc-openapi配置
 springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.sht.zdaicode.controller
-# knife4j???????????????
+
+# knife4j接口文档配置
 knife4j:
   enable: true
   setting:
     language: zh_cn
 
-# Pixabay API配置
-pixabay:
-  api-key: 52245879-ba334dd800c5f8cd30aaee568
-
-# Pexels API配置（如果需要）
-pexels:
-  api-key: YOUR_PEXELS_API_KEY_HERE
+# API配置 - 敏感信息已移至application-local.yml
+# pixabay.api-key 和 pexels.api-key 在 application-local.yml 中配置
