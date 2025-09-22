@@ -133,25 +133,58 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
         addToMemory(aiMessage);
 
         if (aiMessage.hasToolExecutionRequests()) {
+            // 执行所有工具并收集结果
+            List<ToolExecutionResultMessage> toolResults = new ArrayList<>();
+            
             for (ToolExecutionRequest toolExecutionRequest : aiMessage.toolExecutionRequests()) {
                 String toolName = toolExecutionRequest.name();
                 ToolExecutor toolExecutor = toolExecutors.get(toolName);
-                String toolExecutionResult = toolExecutor.execute(toolExecutionRequest, memoryId);
-                ToolExecutionResultMessage toolExecutionResultMessage =
-                        ToolExecutionResultMessage.from(toolExecutionRequest, toolExecutionResult);
-                addToMemory(toolExecutionResultMessage);
+                
+                if (toolExecutor == null) {
+                    LOG.warn("Tool executor not found for tool: {}", toolName);
+                    String errorResult = "Error: Tool '" + toolName + "' not found";
+                    ToolExecutionResultMessage errorMessage = 
+                            ToolExecutionResultMessage.from(toolExecutionRequest, errorResult);
+                    toolResults.add(errorMessage);
+                    addToMemory(errorMessage);
+                    continue;
+                }
+                
+                try {
+                    String toolExecutionResult = toolExecutor.execute(toolExecutionRequest, memoryId);
+                    ToolExecutionResultMessage toolExecutionResultMessage =
+                            ToolExecutionResultMessage.from(toolExecutionRequest, toolExecutionResult);
+                    toolResults.add(toolExecutionResultMessage);
+                    addToMemory(toolExecutionResultMessage);
 
-                if (toolExecutionHandler != null) {
-                    ToolExecution toolExecution = ToolExecution.builder()
-                            .request(toolExecutionRequest)
-                            .result(toolExecutionResult)
-                            .build();
-                    toolExecutionHandler.accept(toolExecution);
+                    if (toolExecutionHandler != null) {
+                        ToolExecution toolExecution = ToolExecution.builder()
+                                .request(toolExecutionRequest)
+                                .result(toolExecutionResult)
+                                .build();
+                        toolExecutionHandler.accept(toolExecution);
+                    }
+                } catch (Exception e) {
+                    LOG.error("Tool execution failed for tool: {}", toolName, e);
+                    String errorResult = "Error executing tool '" + toolName + "': " + e.getMessage();
+                    ToolExecutionResultMessage errorMessage = 
+                            ToolExecutionResultMessage.from(toolExecutionRequest, errorResult);
+                    toolResults.add(errorMessage);
+                    addToMemory(errorMessage);
                 }
             }
 
+            // 验证消息序列完整性
+            List<ChatMessage> messages = messagesToSend(memoryId);
+            if (!validateMessageSequence(messages)) {
+                LOG.error("Invalid message sequence detected. Messages: {}", 
+                    messages.stream().map(m -> m.getClass().getSimpleName()).toList());
+                // 尝试修复消息序列
+                messages = repairMessageSequence(messages);
+            }
+
             ChatRequest chatRequest = ChatRequest.builder()
-                    .messages(messagesToSend(memoryId))
+                    .messages(messages)
                     .toolSpecifications(toolSpecifications)
                     .build();
 
@@ -229,6 +262,83 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
 
     private List<ChatMessage> messagesToSend(Object memoryId) {
         return getMemory(memoryId).messages();
+    }
+
+    /**
+     * 验证消息序列是否符合OpenAI API要求
+     * OpenAI要求：assistant消息包含tool_calls后，必须紧跟对应的tool结果消息
+     */
+    private boolean validateMessageSequence(List<ChatMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return true;
+        }
+
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage message = messages.get(i);
+            if (message instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
+                // 检查后续消息是否包含对应的工具结果
+                List<ToolExecutionRequest> toolRequests = aiMessage.toolExecutionRequests();
+                int expectedToolResults = toolRequests.size();
+                int foundToolResults = 0;
+                
+                // 检查后续消息中的工具结果
+                for (int j = i + 1; j < messages.size() && j < i + 1 + expectedToolResults; j++) {
+                    if (messages.get(j) instanceof ToolExecutionResultMessage) {
+                        foundToolResults++;
+                    } else {
+                        break; // 工具结果消息必须连续
+                    }
+                }
+                
+                if (foundToolResults != expectedToolResults) {
+                    LOG.warn("Message sequence validation failed: expected {} tool results, found {}", 
+                            expectedToolResults, foundToolResults);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 修复消息序列，确保符合OpenAI API要求
+     */
+    private List<ChatMessage> repairMessageSequence(List<ChatMessage> messages) {
+        List<ChatMessage> repairedMessages = new ArrayList<>();
+        
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage message = messages.get(i);
+            repairedMessages.add(message);
+            
+            if (message instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
+                // 确保每个工具调用都有对应的结果消息
+                List<ToolExecutionRequest> toolRequests = aiMessage.toolExecutionRequests();
+                
+                for (ToolExecutionRequest toolRequest : toolRequests) {
+                    // 查找对应的工具结果消息
+                    boolean foundResult = false;
+                    for (int j = i + 1; j < messages.size(); j++) {
+                        if (messages.get(j) instanceof ToolExecutionResultMessage toolResult) {
+                            if (toolRequest.id().equals(toolResult.id())) {
+                                foundResult = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果没找到结果消息，创建一个默认的
+                    if (!foundResult) {
+                        LOG.warn("Creating missing tool result for tool call: {}", toolRequest.id());
+                        ToolExecutionResultMessage missingResult = 
+                                ToolExecutionResultMessage.from(toolRequest, "Tool execution result not found");
+                        repairedMessages.add(missingResult);
+                    }
+                }
+            }
+        }
+        
+        LOG.info("Message sequence repaired: {} -> {} messages", messages.size(), repairedMessages.size());
+        return repairedMessages;
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.sht.zdaicode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.sht.zdaicode.ai.tools.FileWriteTool;
+import com.sht.zdaicode.ai.tools.*;
 import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
 import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
@@ -36,6 +36,8 @@ public class AiCodeGeneratorServiceFactory {
     private ChatHistoryService chatHistoryService;
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * AI 服务实例缓存
@@ -90,15 +92,10 @@ public class AiCodeGeneratorServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
         // 根据代码生成类型选择不同的模型配置
         return switch (codeGenType) {
-            // Vue 项目生成使用推理模型
-            case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
-                            toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
-                    ))
-                    .build();
+            // Vue 项目不在此处理，已迁移到 VueProjectAiServiceFactory
+            case VUE_PROJECT -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
+                    "Vue项目生成已迁移到VueProjectAiServiceFactory，请使用专用服务");
+
             // HTML 和多文件生成使用默认模型
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
@@ -111,10 +108,6 @@ public class AiCodeGeneratorServiceFactory {
     }
 
 
-
-
-
-
     /**
      * 创建AI代码生成服务
      *
@@ -123,6 +116,14 @@ public class AiCodeGeneratorServiceFactory {
     @Bean
     public AiCodeGeneratorService aiCodeGeneratorService() {
         return getAiCodeGeneratorService(0L);
+    }
+
+    /**
+     * 清除缓存
+     */
+    public void clearCache() {
+        serviceCache.invalidateAll();
+        log.info("AI代码生成服务缓存已清除");
     }
 
 }

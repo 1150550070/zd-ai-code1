@@ -93,7 +93,9 @@ public class JsonMessageStreamHandler {
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    // 根据实际工具名称动态显示
+                    String toolName = getToolDisplayName(toolRequestMessage.getName());
+                    return String.format("\n\n[选择工具] %s\n\n", toolName);
                 } else {
                     // 不是第一次调用这个工具，直接返回空
                     return "";
@@ -105,12 +107,14 @@ public class JsonMessageStreamHandler {
                 String relativeFilePath = jsonObject.getStr("relativeFilePath");
                 String suffix = FileUtil.getSuffix(relativeFilePath);
                 String content = jsonObject.getStr("content");
+                // 根据实际工具名称动态显示
+                String toolName = getToolDisplayName(toolExecutedMessage.getName());
                 String result = String.format("""
-                        [工具调用] 写入文件 %s
+                        [工具调用] %s %s
                         ```%s
                         %s
                         ```
-                        """, relativeFilePath, suffix, content);
+                        """, toolName, relativeFilePath, suffix, content);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
@@ -121,5 +125,22 @@ public class JsonMessageStreamHandler {
                 return "";
             }
         }
+    }
+
+    /**
+     * 根据工具名称获取显示名称
+     *
+     * @param toolName 工具名称
+     * @return 显示名称
+     */
+    private String getToolDisplayName(String toolName) {
+        return switch (toolName) {
+            case "writeFile" -> "写入文件";
+            case "readFile" -> "读取文件";
+            case "modifyFile" -> "修改文件";
+            case "deleteFile" -> "删除文件";
+            case "readDir" -> "读取目录";
+            default -> toolName; // 如果没有匹配的，返回原始名称
+        };
     }
 }

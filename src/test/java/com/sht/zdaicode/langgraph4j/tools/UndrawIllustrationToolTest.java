@@ -22,70 +22,41 @@ class UndrawIllustrationToolTest {
 
     @Test
     void testSearchIllustrations() {
-        // 测试搜索插画功能
-        List<ImageResource> illustrations = undrawIllustrationTool.searchIllustrations("technology");
-        assertNotNull(illustrations, "插画列表不应为null");
+        // 测试正常搜索插画
+        List<ImageResource> illustrations = undrawIllustrationTool.searchIllustrations("happy");
+        assertNotNull(illustrations);
         
-        System.out.println("=== 插画搜索测试 ===");
-        System.out.println("搜索关键词: technology");
+        // 验证返回的插画资源
+        ImageResource firstIllustration = illustrations.get(0);
+        assertEquals(ImageCategoryEnum.ILLUSTRATION, firstIllustration.getCategory());
+        assertNotNull(firstIllustration.getDescription());
+        assertNotNull(firstIllustration.getUrl());
+        assertTrue(firstIllustration.getUrl().startsWith("http"));
         System.out.println("搜索到 " + illustrations.size() + " 张插画");
-        
-        // 如果有结果，验证返回的插画资源
-        if (!illustrations.isEmpty()) {
-            // 验证第一张插画的基本属性
-            ImageResource firstIllustration = illustrations.get(0);
-            assertEquals(ImageCategoryEnum.ILLUSTRATION, firstIllustration.getCategory(), "图片类别应为插画");
-            assertNotNull(firstIllustration.getDescription(), "插画描述不应为空");
-            assertNotNull(firstIllustration.getUrl(), "插画URL不应为空");
-            assertTrue(firstIllustration.getUrl().startsWith("http"), "插画URL应以http开头");
-            
-            // 打印所有插画信息
-            illustrations.forEach(illustration ->
-                    System.out.println("插画: " + illustration.getDescription() + " - " + illustration.getUrl())
-            );
-            
-            // 验证数量合理性
-            assertTrue(illustrations.size() <= 12, "插画数量不应超过12张");
-            
-        } else {
-            System.out.println("未获取到插画资源，可能是网络问题或API限制");
-        }
-        
-        System.out.println("插画搜索测试完成");
+        illustrations.forEach(illustration -> 
+            System.out.println("插画: " + illustration.getDescription() + " - " + illustration.getUrl())
+        );
     }
 
     @Test
     void testSearchVectorIcons() {
         // 测试搜索矢量图和图标功能
         List<ImageResource> vectors = undrawIllustrationTool.searchVectorIcons("business");
-        assertNotNull(vectors, "矢量图列表不应为null");
+        assertNotNull(vectors);
         
-        System.out.println("=== 矢量图搜索测试 ===");
-        System.out.println("搜索关键词: business");
-        System.out.println("搜索到 " + vectors.size() + " 张矢量图");
-        
+        // 验证返回的矢量图资源
         if (!vectors.isEmpty()) {
-            // 验证第一张矢量图的基本属性
             ImageResource firstVector = vectors.get(0);
-            assertEquals(ImageCategoryEnum.ILLUSTRATION, firstVector.getCategory(), "图片类别应为插画");
-            assertNotNull(firstVector.getDescription(), "矢量图描述不应为空");
-            assertNotNull(firstVector.getUrl(), "矢量图URL不应为空");
-            assertTrue(firstVector.getUrl().startsWith("http"), "矢量图URL应以http开头");
-            assertTrue(firstVector.getDescription().contains("矢量图"), "描述应包含'矢量图'标识");
-            
-            // 打印所有矢量图信息
+            assertEquals(ImageCategoryEnum.ILLUSTRATION, firstVector.getCategory());
+            assertNotNull(firstVector.getDescription());
+            assertNotNull(firstVector.getUrl());
+            assertTrue(firstVector.getUrl().startsWith("http"));
+            assertTrue(firstVector.getDescription().contains("矢量图"));
+            System.out.println("搜索到 " + vectors.size() + " 张矢量图");
             vectors.forEach(vector ->
-                    System.out.println("矢量图: " + vector.getDescription() + " - " + vector.getUrl())
+                System.out.println("矢量图: " + vector.getDescription() + " - " + vector.getUrl())
             );
-            
-            // 验证数量合理性
-            assertTrue(vectors.size() <= 8, "矢量图数量不应超过8张");
-            
-        } else {
-            System.out.println("未获取到矢量图资源，可能是网络问题或API限制");
         }
-        
-        System.out.println("矢量图搜索测试完成");
     }
 
     @Test

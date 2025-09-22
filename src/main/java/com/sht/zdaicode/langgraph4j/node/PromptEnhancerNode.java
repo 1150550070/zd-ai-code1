@@ -30,6 +30,13 @@ public class PromptEnhancerNode {
             if (CollUtil.isNotEmpty(imageList) || StrUtil.isNotBlank(imageListStr)) {
                 enhancedPromptBuilder.append("\n\n## 可用素材资源\n");
                 enhancedPromptBuilder.append("请在生成网站使用以下图片资源，将这些图片合理地嵌入到网站的相应位置中。\n");
+                // 添加国内可访问的示例格式说明
+                enhancedPromptBuilder.append("\n拼接的提示词示例：\n");
+                enhancedPromptBuilder.append("- 架构图：阿里云技术架构参考（https://img.alicdn.com/tfs/TB1Ly5oS3HqK1RjSZFPXXcwapXa-2872-1579.png）\n");
+                enhancedPromptBuilder.append("- Logo图片：码云Gitee平台Logo（https://gitee.com/static/images/logo_gitee_red.svg）\n");
+                enhancedPromptBuilder.append("- 界面截图：Ant Design组件库界面（https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg）\n");
+                enhancedPromptBuilder.append("- 技术图标：掘金技术社区图标（https://lf3-cdn-tos.bytescm.com/obj/static/xitu_juejin_web/static/favicons/favicon-32x32.png）\n\n");
+
                 if (CollUtil.isNotEmpty(imageList)) {
                     for (ImageResource image : imageList) {
                         enhancedPromptBuilder.append("- ")

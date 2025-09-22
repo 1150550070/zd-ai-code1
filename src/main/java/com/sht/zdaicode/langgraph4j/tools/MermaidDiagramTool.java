@@ -37,7 +37,7 @@ public class MermaidDiagramTool {
         try {
             // 转换为SVG图片
             File diagramFile = convertMermaidToSvg(mermaidCode);
-            // 上传到COS
+            // 上传到OSS
             String keyName = String.format("/mermaid/%s/%s",
                     RandomUtil.randomString(5), diagramFile.getName());
             String ossUrl = ossManager.uploadFile(keyName, diagramFile);

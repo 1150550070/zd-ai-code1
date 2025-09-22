@@ -3,6 +3,9 @@ package com.sht.zdaicode.core;
 import cn.hutool.json.JSONUtil;
 import com.sht.zdaicode.ai.AiCodeGeneratorService;
 import com.sht.zdaicode.ai.AiCodeGeneratorServiceFactory;
+import com.sht.zdaicode.ai.VueProjectAiService;
+import com.sht.zdaicode.ai.VueProjectAiServiceFactory;
+import com.sht.zdaicode.ai.VueProjectScenarioDetector;
 import com.sht.zdaicode.ai.model.HtmlCodeResult;
 import com.sht.zdaicode.ai.model.MultiFileCodeResult;
 import com.sht.zdaicode.ai.model.message.AiResponseMessage;
@@ -13,6 +16,7 @@ import com.sht.zdaicode.core.saver.CodeFileSaverExecutor;
 import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
 import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
+import com.sht.zdaicode.model.enums.VueProjectScenarioEnum;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
@@ -32,6 +36,10 @@ public class AiCodeGeneratorFacade {
 
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+    @Resource
+    private VueProjectAiServiceFactory vueProjectAiServiceFactory;
+    @Resource
+    private VueProjectScenarioDetector vueProjectScenarioDetector;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -72,20 +80,34 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
-        //根据appId和生成类型获取相应的Ai服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
 
         return switch (codeGenTypeEnum) {
             case HTML -> {
+                //根据appId和生成类型获取相应的Ai服务实例
+                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
             }
             case MULTI_FILE -> {
+                //根据appId和生成类型获取相应的Ai服务实例
+                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
             case VUE_PROJECT -> {
-                TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+                // 检测Vue项目场景（创建/修改）
+                VueProjectScenarioEnum scenario = vueProjectScenarioDetector.detectScenario(appId, userMessage);
+                log.info("Vue项目场景检测结果: {} - {}", scenario.getValue(), scenario.getText());
+                
+                // 获取Vue项目专用AI服务
+                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiService(appId, scenario);
+                
+                // 根据场景调用不同的方法
+                TokenStream tokenStream = switch (scenario) {
+                    case CREATE -> vueProjectAiService.createVueProjectCodeStream(appId, userMessage);
+                    case EDIT -> vueProjectAiService.editVueProjectCodeStream(appId, userMessage);
+                };
+                
                 yield processTokenStream(tokenStream);
             }
             default -> {
