@@ -20,8 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -57,6 +59,7 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     private final Map<String, ToolExecutor> toolExecutors;
     private final List<String> responseBuffer = new ArrayList<>();
     private final boolean hasOutputGuardrails;
+    private final Set<String> failedTools = new HashSet<>();
 
     AiServiceStreamingResponseHandler(
             ChatExecutor chatExecutor,
@@ -142,7 +145,35 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
                 
                 if (toolExecutor == null) {
                     LOG.warn("Tool executor not found for tool: {}", toolName);
-                    String errorResult = "Error: Tool '" + toolName + "' not found";
+                    
+                    // 检查是否已经失败过这个工具，防止无限循环
+                    if (failedTools.contains(toolName)) {
+                        LOG.error("Preventing infinite loop: tool '{}' has already failed. Stopping execution.", toolName);
+                        String stopResult = "STOP: Tool '" + toolName + "' not found and has been attempted before. " +
+                                "Available tools: " + String.join(", ", toolExecutors.keySet()) + 
+                                ". Please use a different approach or correct tool name.";
+                        ToolExecutionResultMessage stopMessage = 
+                                ToolExecutionResultMessage.from(toolExecutionRequest, stopResult);
+                        toolResults.add(stopMessage);
+                        addToMemory(stopMessage);
+                        
+                        // 直接完成响应，不再继续工具调用链
+                        if (completeResponseHandler != null) {
+                            ChatResponse finalResponse = ChatResponse.builder()
+                                    .aiMessage(AiMessage.from("Tool execution stopped due to repeated failures."))
+                                    .metadata(completeResponse.metadata())
+                                    .build();
+                            completeResponseHandler.accept(finalResponse);
+                        }
+                        return;
+                    }
+                    
+                    // 记录失败的工具
+                    failedTools.add(toolName);
+                    
+                    String errorResult = "Error: Tool '" + toolName + "' not found. Available tools: " + 
+                            String.join(", ", toolExecutors.keySet()) + 
+                            ". Please use the correct tool name and do not retry the same invalid tool.";
                     ToolExecutionResultMessage errorMessage = 
                             ToolExecutionResultMessage.from(toolExecutionRequest, errorResult);
                     toolResults.add(errorMessage);

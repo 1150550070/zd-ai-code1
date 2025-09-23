@@ -14,6 +14,9 @@ const loginUserStore = useLoginUserStore()
 const userPrompt = ref('')
 const creating = ref(false)
 
+// Agent 模式选择
+const useAgentMode = ref(false)
+
 // 我的应用数据
 const myApps = ref<API.AppVO[]>([])
 const myAppsPage = reactive({
@@ -58,9 +61,10 @@ const createApp = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       message.success('应用创建成功')
-      // 跳转到对话页面，确保ID是字符串类型
+      // 跳转到对话页面，确保ID是字符串类型，并传递 agent 模式参数
       const appId = String(res.data.data)
-      await router.push(`/app/chat/${appId}`)
+      const query = useAgentMode.value ? { agent: 'true' } : {}
+      await router.push({ path: `/app/chat/${appId}`, query })
     } else {
       message.error('创建失败：' + res.data.message)
     }
@@ -163,6 +167,37 @@ onMounted(() => {
       <div class="hero-section">
         <h1 class="hero-title">AI 应用生成平台</h1>
         <p class="hero-description">一句话轻松创建网站应用</p>
+      </div>
+
+      <!-- Agent 模式选择 -->
+      <div class="mode-selection">
+        <div class="mode-switch-container">
+          <a-switch
+            v-model:checked="useAgentMode"
+            class="mode-switch"
+            :loading="creating"
+          />
+          <div class="mode-info">
+            <div class="mode-title">
+              {{ useAgentMode ? 'Agent 模式' : '传统模式' }}
+            </div>
+            <div class="mode-description">
+              {{ useAgentMode ? '智能图片搜集，效果更佳' : '快速生成，简单高效' }}
+            </div>
+          </div>
+        </div>
+        <div class="mode-features">
+          <div v-if="useAgentMode" class="agent-features">
+            <span class="feature-tag">🖼️ 智能图片搜集</span>
+            <span class="feature-tag">🎨 多媒体优化</span>
+            <span class="feature-tag">⚡ 并发处理</span>
+          </div>
+          <div v-else class="traditional-features">
+            <span class="feature-tag">🚀 快速生成</span>
+            <span class="feature-tag">💡 简洁高效</span>
+            <span class="feature-tag">📝 文本优先</span>
+          </div>
+        </div>
       </div>
 
       <!-- 用户提示词输入框 -->
@@ -440,6 +475,82 @@ onMounted(() => {
   color: #64748b;
   position: relative;
   z-index: 2;
+}
+
+/* 模式选择区域 */
+.mode-selection {
+  max-width: 800px;
+  margin: 0 auto 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mode-switch-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mode-switch {
+  flex-shrink: 0;
+}
+
+.mode-info {
+  flex: 1;
+}
+
+.mode-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.mode-description {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.mode-features {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+}
+
+.agent-features .feature-tag {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.traditional-features .feature-tag {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.feature-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* 输入区域 */
