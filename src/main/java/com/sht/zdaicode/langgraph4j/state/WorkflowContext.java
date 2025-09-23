@@ -70,6 +70,11 @@ public class WorkflowContext implements Serializable {
     private String buildResultDir;
 
     /**
+     * 生成的代码内容
+     */
+    private String generatedCode;
+
+    /**
      * 错误信息
      */
     private String errorMessage;

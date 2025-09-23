@@ -169,39 +169,64 @@ onMounted(() => {
         <p class="hero-description">一句话轻松创建网站应用</p>
       </div>
 
-      <!-- Agent 模式选择 -->
-      <div class="mode-selection">
-        <div class="mode-switch-container">
-          <a-switch
-            v-model:checked="useAgentMode"
-            class="mode-switch"
-            :loading="creating"
-          />
-          <div class="mode-info">
-            <div class="mode-title">
-              {{ useAgentMode ? 'Agent 模式' : '传统模式' }}
-            </div>
-            <div class="mode-description">
-              {{ useAgentMode ? '智能图片搜集，效果更佳' : '快速生成，简单高效' }}
-            </div>
-          </div>
-        </div>
-        <div class="mode-features">
-          <div v-if="useAgentMode" class="agent-features">
-            <span class="feature-tag">🖼️ 智能图片搜集</span>
-            <span class="feature-tag">🎨 多媒体优化</span>
-            <span class="feature-tag">⚡ 并发处理</span>
-          </div>
-          <div v-else class="traditional-features">
-            <span class="feature-tag">🚀 快速生成</span>
-            <span class="feature-tag">💡 简洁高效</span>
-            <span class="feature-tag">📝 文本优先</span>
-          </div>
-        </div>
-      </div>
-
       <!-- 用户提示词输入框 -->
       <div class="input-section">
+        <!-- 模式选择 - 紧凑版 -->
+        <div class="mode-selector-compact">
+          <div class="mode-toggle-group">
+            <a-tooltip placement="bottom" :mouse-enter-delay="0.3">
+              <template #title>
+                <div class="tooltip-content">
+                  <div class="tooltip-title">⚡ 传统模式</div>
+                  <div class="tooltip-features">
+                    <div class="tooltip-feature">🚀 快速生成代码</div>
+                    <div class="tooltip-feature">💡 简洁高效流程</div>
+                    <div class="tooltip-feature">📝 专注文本内容</div>
+                    <div class="tooltip-feature">⏱️ 响应速度快</div>
+                  </div>
+                  <div class="tooltip-desc">适合快速原型和简单项目</div>
+                </div>
+              </template>
+              <button
+                :class="['mode-btn', { active: !useAgentMode }]"
+                @click="useAgentMode = false"
+                :disabled="creating"
+              >
+                <span class="mode-icon">⚡</span>
+                <span class="mode-text">传统模式</span>
+                <div class="mode-btn-glow"></div>
+              </button>
+            </a-tooltip>
+
+            <a-tooltip placement="bottom" :mouse-enter-delay="0.3">
+              <template #title>
+                <div class="tooltip-content">
+                  <div class="tooltip-title">🎨 Agent模式</div>
+                  <div class="tooltip-features">
+                    <div class="tooltip-feature">🖼️ 智能图片搜集</div>
+                    <div class="tooltip-feature">🎯 多媒体内容优化</div>
+                    <div class="tooltip-feature">⚡ 并发处理技术</div>
+                    <div class="tooltip-feature">🧠 AI工作流引擎</div>
+                  </div>
+                  <div class="tooltip-desc">适合复杂项目和视觉效果要求高的应用</div>
+                </div>
+              </template>
+              <button
+                :class="['mode-btn', { active: useAgentMode }]"
+                @click="useAgentMode = true"
+                :disabled="creating"
+              >
+                <span class="mode-icon">🎨</span>
+                <span class="mode-text">Agent模式</span>
+                <div class="mode-btn-glow"></div>
+              </button>
+            </a-tooltip>
+          </div>
+          <div class="mode-description-compact">
+            {{ useAgentMode ? '智能图片搜集，效果更佳' : '快速生成，简单高效' }}
+          </div>
+        </div>
+
         <a-textarea
           v-model:value="userPrompt"
           placeholder="帮我创建个人博客网站"
@@ -368,6 +393,36 @@ onMounted(() => {
   animation: lightPulse 8s ease-in-out infinite alternate;
 }
 
+/* 浮动粒子效果 */
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle 2px at 20px 30px, rgba(59, 130, 246, 0.3), transparent),
+    radial-gradient(circle 2px at 40px 70px, rgba(139, 92, 246, 0.3), transparent),
+    radial-gradient(circle 1px at 90px 40px, rgba(16, 185, 129, 0.3), transparent),
+    radial-gradient(circle 1px at 130px 80px, rgba(59, 130, 246, 0.3), transparent),
+    radial-gradient(circle 2px at 160px 30px, rgba(139, 92, 246, 0.3), transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: floatingParticles 25s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes floatingParticles {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  100% {
+    transform: translateY(-100px) translateX(50px);
+  }
+}
+
 @keyframes gridFloat {
   0%,
   100% {
@@ -477,80 +532,406 @@ onMounted(() => {
   z-index: 2;
 }
 
-/* 模式选择区域 */
-.mode-selection {
-  max-width: 800px;
-  margin: 0 auto 32px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.95);
+/* 紧凑模式选择器 */
+.mode-selector-compact {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-toggle-group {
+  display: flex;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%),
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
   backdrop-filter: blur(20px);
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-toggle-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3), transparent);
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.mode-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08)),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: all 0.4s ease;
+  border-radius: 12px;
+}
+
+.mode-btn:hover::before {
+  opacity: 1;
+}
+
+.mode-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    0 12px 30px rgba(59, 130, 246, 0.2),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+  color: #3b82f6;
+}
+
+.mode-btn:hover .mode-btn-glow {
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+.mode-btn.active {
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%),
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+  box-shadow:
+    0 8px 25px rgba(59, 130, 246, 0.4),
+    0 4px 12px rgba(139, 92, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.mode-switch-container {
+.mode-btn.active::before {
+  opacity: 0;
+}
+
+.mode-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: activeShimmer 2s ease-in-out infinite;
+}
+
+@keyframes activeShimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.mode-btn.active .mode-btn-glow {
+  opacity: 0.6;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+}
+
+.mode-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mode-btn-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: all 0.5s ease;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: scale(0.8);
+}
+
+.mode-icon {
+  font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
 }
 
-.mode-switch {
-  flex-shrink: 0;
-}
-
-.mode-info {
-  flex: 1;
-}
-
-.mode-title {
-  font-size: 18px;
+.mode-text {
   font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
-.mode-description {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-.mode-features {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.feature-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+.mode-description-compact {
+  font-size: 13px;
+  color: #475569;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.4s ease;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
 }
 
-.agent-features .feature-tag {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.2);
+.mode-description-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.6s ease;
 }
 
-.traditional-features .feature-tag {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-  border-color: rgba(139, 92, 246, 0.2);
+.mode-description-compact:hover::before {
+  left: 100%;
 }
 
-.feature-tag:hover {
+.mode-description-compact:hover {
+  color: #3b82f6;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 6px 16px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Tooltip 样式 - 精致高级版 */
+.tooltip-content {
+  max-width: 300px;
+  padding: 20px 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%),
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  backdrop-filter: blur(25px);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 8px 25px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.tooltip-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3), transparent);
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle, rgba(59, 130, 246, 0.03) 0%, transparent 70%);
+  animation: tooltipShimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes tooltipShimmer {
+  0%, 100% {
+    opacity: 0.3;
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: rotate(180deg) scale(1.1);
+  }
+}
+
+.tooltip-title {
+  font-size: 17px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 2;
+}
+
+.tooltip-features {
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.tooltip-feature {
+  font-size: 14px;
+  color: #1e293b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  line-height: 1.6;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tooltip-feature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.tooltip-feature:hover::before {
+  left: 100%;
+}
+
+.tooltip-feature:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(59, 130, 246, 0.2);
+  transform: translateX(4px);
+}
+
+.tooltip-feature:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-desc {
+  font-size: 13px;
+  color: #475569;
+  text-align: center;
+  font-style: italic;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+  background: rgba(248, 250, 252, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+/* Ant Design Tooltip 全局样式覆盖 - 精致高级版 */
+:deep(.ant-tooltip) {
+  z-index: 9999;
+  filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.15));
+}
+
+:deep(.ant-tooltip-inner) {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+  backdrop-filter: blur(25px) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 8px 25px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: #0f172a !important;
+  font-weight: 500;
+  padding: 0 !important;
+  min-height: auto !important;
+  position: relative;
+  overflow: hidden;
+}
+
+:deep(.ant-tooltip-inner::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3), transparent);
+}
+
+:deep(.ant-tooltip-inner::after) {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.03) 0%, transparent 70%);
+  animation: tooltipShimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+:deep(.ant-tooltip-arrow) {
+  display: none !important;
+}
+
+/* 工具提示入场动画 */
+:deep(.ant-tooltip) {
+  animation: tooltipFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tooltipFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* 输入区域 */
@@ -567,13 +948,38 @@ onMounted(() => {
   padding: 20px 60px 20px 20px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.prompt-input::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.prompt-input:hover::before {
+  left: 100%;
 }
 
 .prompt-input:focus {
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+  box-shadow:
+    0 15px 50px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-3px) scale(1.01);
+}
+
+.prompt-input:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.18);
 }
 
 .input-actions {
@@ -596,15 +1002,17 @@ onMounted(() => {
 
 .quick-actions .ant-btn {
   border-radius: 25px;
-  padding: 8px 20px;
+  padding: 10px 24px;
   height: auto;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(59, 130, 246, 0.15);
   color: #475569;
-  backdrop-filter: blur(15px);
-  transition: all 0.3s;
+  backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 .quick-actions .ant-btn::before {
@@ -614,25 +1022,61 @@ onMounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.15), transparent);
+  transition: left 0.6s ease;
+}
+
+.quick-actions .ant-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  transition: all 0.4s ease;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
 }
 
 .quick-actions .ant-btn:hover::before {
   left: 100%;
 }
 
+.quick-actions .ant-btn:hover::after {
+  width: 200px;
+  height: 200px;
+}
+
 .quick-actions .ant-btn:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border-color: rgba(59, 130, 246, 0.4);
   color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 10px 30px rgba(59, 130, 246, 0.2),
+    0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.quick-actions .ant-btn:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 /* 区域标题 */
 .section {
   margin-bottom: 60px;
+  position: relative;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  animation: sectionGlow 4s ease-in-out infinite;
 }
 
 .section-title {
@@ -640,6 +1084,50 @@ onMounted(() => {
   font-weight: 600;
   margin-bottom: 32px;
   color: #1e293b;
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
+  transition: width 0.6s ease;
+}
+
+.section:hover .section-title::before {
+  width: 100%;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.8s ease;
+}
+
+.section:hover .section-title::after {
+  left: 100%;
+}
+
+@keyframes sectionGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scaleX(1.2);
+  }
 }
 
 /* 我的作品网格 */
@@ -648,6 +1136,7 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  animation: fadeInUp 0.8s ease-out;
 }
 
 /* 精选案例网格 */
@@ -656,6 +1145,18 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  animation: fadeInUp 1s ease-out 0.2s both;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 分页 */
@@ -663,6 +1164,66 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 32px;
+  position: relative;
+}
+
+.pagination-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+
+/* 分页组件美化 */
+.pagination-wrapper :deep(.ant-pagination) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-wrapper :deep(.ant-pagination-item) {
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.pagination-wrapper :deep(.ant-pagination-item:hover) {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.pagination-wrapper :deep(.ant-pagination-item-active) {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-color: transparent;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.pagination-wrapper :deep(.ant-pagination-prev),
+.pagination-wrapper :deep(.ant-pagination-next) {
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.pagination-wrapper :deep(.ant-pagination-prev:hover),
+.pagination-wrapper :deep(.ant-pagination-next:hover) {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 /* 响应式设计 */

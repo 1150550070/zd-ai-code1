@@ -15,18 +15,13 @@ import org.bsc.langgraph4j.NodeOutput;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.bsc.langgraph4j.prebuilt.MessagesStateGraph;
 
-import cn.hutool.json.JSONUtil;
-
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import static org.bsc.langgraph4j.StateGraph.END;
@@ -137,8 +132,9 @@ public class CodeGenConcurrentWorkflow {
 
                 log.info("开始执行并发代码生成工作流 - Flux流式输出");
 
-                // 发送开始事件
-                sink.next(formatSseEvent("start", "开始执行并发代码生成工作流"));
+                // 发送开始消息
+                sink.next("🚀 **开始执行Agent模式代码生成** ");
+                sink.next("💭 **思考过程：**正在分析您的需求... ");
 
                 int stepCounter = 1;
                 WorkflowContext finalContext = null;
@@ -150,43 +146,89 @@ public class CodeGenConcurrentWorkflow {
                     if (currentContext != null) {
                         finalContext = currentContext;
 
-                        // 发送步骤进度事件
-                        String progressData = String.format("{\"step\":%d,\"currentStep\":\"%s\",\"status\":\"processing\"}",
-                                stepCounter, currentContext.getCurrentStep());
-                        sink.next(formatSseEvent("progress", progressData));
+                        // 发送用户友好的步骤信息
+                        String stepMessage = formatStepMessage(stepCounter, currentContext.getCurrentStep());
+                        sink.next(stepMessage);
 
                         log.info("--- 第 {} 步完成: {} ---", stepCounter, currentContext.getCurrentStep());
                     }
                     stepCounter++;
                 }
 
-                // 发送完成事件
-                if (finalContext != null) {
-                    String resultData = JSONUtil.toJsonStr(finalContext);
-                    sink.next(formatSseEvent("result", resultData));
+                // 发送完成消息
+                if (finalContext != null && finalContext.getGeneratedCode() != null) {
+                    sink.next("✅ **代码生成完成！** ");
+                    sink.next("📝 **生成的代码：** ");
+                    sink.next(finalContext.getGeneratedCode());
+                } else {
+                    sink.next("❌ **代码生成失败，请重试** ");
                 }
 
-                sink.next(formatSseEvent("complete", "并发代码生成工作流执行完成"));
                 sink.complete();
-
                 log.info("并发代码生成工作流执行完成！");
 
             } catch (Exception e) {
                 log.error("并发工作流执行失败", e);
-                sink.next(formatSseEvent("error", "工作流执行失败: " + e.getMessage()));
+                sink.next("❌ **执行失败：** " + e.getMessage() + " ");
                 sink.error(e);
             }
         });
     }
 
-
+    /**
+     * 格式化步骤消息为用户友好的格式
+     */
+    private String formatStepMessage(int stepNumber, String stepName) {
+        String emoji = getStepEmoji(stepName);
+        String description = getStepDescription(stepName);
+        return String.format("%s **步骤 %d：%s** %s ", emoji, stepNumber, stepName, description);
+    }
 
     /**
-     * 格式化SSE事件
+     * 获取步骤对应的emoji
      */
-    private String formatSseEvent(String event, String data) {
-        return String.format("event: %s data: %s", event, data);
+    private String getStepEmoji(String stepName) {
+        switch (stepName) {
+            case "初始化": return "🔧";
+            case "图片规划": return "🎨";
+            case "内容图片收集": return "📸";
+            case "插图收集": return "🖼️";
+            case "图表收集": return "📊";
+            case "Logo收集": return "🏷️";
+            case "图片聚合": return "🔗";
+            case "提示词增强": return "✨";
+            case "路由": return "🛤️";
+            case "代码生成": return "💻";
+            case "代码质量检查": return "🔍";
+            case "项目构建": return "🏗️";
+            default: return "⚙️";
+        }
     }
+
+    /**
+     * 获取步骤描述
+     */
+    private String getStepDescription(String stepName) {
+        switch (stepName) {
+            case "初始化": return "正在初始化工作流环境...";
+            case "图片规划": return "🔍 分析项目需求，制定图片收集策略";
+            case "内容图片收集": return "🌐 并发搜索相关内容图片资源";
+            case "插图收集": return "🎭 并发收集装饰性插图素材";
+            case "图表收集": return "📈 并发获取数据可视化图表";
+            case "Logo收集": return "🎯 并发搜索品牌标识素材";
+            case "图片聚合": return "🔄 整合所有收集到的图片资源";
+            case "提示词增强": return "🚀 基于图片资源优化代码生成提示词";
+            case "路由": return "🎯 智能路由到最适合的代码生成策略";
+            case "代码生成": return "⚡ 使用AI生成高质量代码";
+            case "代码质量检查": return "🔬 检查代码质量和规范性";
+            case "项目构建": return "🔨 构建完整的项目结构";
+            default: return "正在处理...";
+        }
+    }
+
+
+
+
 
     /**
      * 执行并发工作流
@@ -196,6 +238,7 @@ public class CodeGenConcurrentWorkflow {
         WorkflowContext initialContext = WorkflowContext.builder()
                 .originalPrompt(originalPrompt)
                 .currentStep("初始化")
+                .appId(0L) // 默认appId，用于测试
                 .build();
         GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
         log.info("并发工作流图:\n{}", graph.content());
