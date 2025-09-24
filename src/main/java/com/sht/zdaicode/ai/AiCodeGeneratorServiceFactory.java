@@ -2,6 +2,8 @@ package com.sht.zdaicode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.sht.zdaicode.ai.guardrail.PromptSafetyInputGuardrail;
+import com.sht.zdaicode.ai.guardrail.RetryOutputGuardrail;
 import com.sht.zdaicode.ai.tools.*;
 import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
@@ -98,10 +100,12 @@ public class AiCodeGeneratorServiceFactory {
             case HTML, MULTI_FILE -> {
                 StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(openAiStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .build();
+                        .chatModel(chatModel)
+                        .streamingChatModel(openAiStreamingChatModel)
+                        .chatMemory(chatMemory)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
+//                        .outputGuardrails(new RetryOutputGuardrail())
+                        .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "不支持的代码生成类型: " + codeGenType.getValue());
