@@ -2,10 +2,12 @@ package com.sht.zdaicode.common;
 
 import com.sht.zdaicode.exception.ErrorCode;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
+//@NoArgsConstructor
 public class BaseResponse<T> implements Serializable {
     //Serializable - 支持序列化，便于网络传输和缓存
 

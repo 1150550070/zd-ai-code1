@@ -11,6 +11,8 @@ import com.sht.zdaicode.ai.model.MultiFileCodeResult;
 import com.sht.zdaicode.ai.model.message.AiResponseMessage;
 import com.sht.zdaicode.ai.model.message.ToolExecutedMessage;
 import com.sht.zdaicode.ai.model.message.ToolRequestMessage;
+import com.sht.zdaicode.constant.AppConstant;
+import com.sht.zdaicode.core.builder.VueProjectBuilder;
 import com.sht.zdaicode.core.parser.CodeParserExecutor;
 import com.sht.zdaicode.core.saver.CodeFileSaverExecutor;
 import com.sht.zdaicode.exception.BusinessException;
@@ -40,6 +42,8 @@ public class AiCodeGeneratorFacade {
     private VueProjectAiServiceFactory vueProjectAiServiceFactory;
     @Resource
     private VueProjectScenarioDetector vueProjectScenarioDetector;
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -108,7 +112,7 @@ public class AiCodeGeneratorFacade {
                     case EDIT -> vueProjectAiService.editVueProjectCodeStream(appId, userMessage);
                 };
                 
-                yield processTokenStream(tokenStream);
+                yield processTokenStream(tokenStream, appId);
             }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
@@ -121,9 +125,10 @@ public class AiCodeGeneratorFacade {
      * 处理Token流
      *
      * @param tokenStream 令牌流
+     * @param appId       应用ID
      * @return 处理后的字符串流
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
@@ -139,6 +144,9 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse completeResponse) -> {
+                        // 同步构建Vue项目
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {

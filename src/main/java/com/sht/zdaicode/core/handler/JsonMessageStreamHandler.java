@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.sht.zdaicode.ai.model.message.*;
-import com.sht.zdaicode.constant.AppConstant;
 import com.sht.zdaicode.core.builder.VueProjectBuilder;
 import com.sht.zdaicode.model.entity.User;
 import com.sht.zdaicode.model.enums.ChatHistoryMessageTypeEnum;
@@ -28,10 +27,7 @@ import java.util.Set;
 @Component
 public class JsonMessageStreamHandler {
 
-    @Resource
-    private VueProjectBuilder vueProjectBuilder;
-    @Autowired
-    private ProjectInfoProperties projectInfoProperties;
+
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -60,9 +56,7 @@ public class JsonMessageStreamHandler {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                    // 异步构建Vue项目
-                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                    vueProjectBuilder.buildProjectAsync(projectPath);
+
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
