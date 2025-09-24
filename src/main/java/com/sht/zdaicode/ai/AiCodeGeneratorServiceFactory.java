@@ -7,6 +7,7 @@ import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
 import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
 import com.sht.zdaicode.service.ChatHistoryService;
+import com.sht.zdaicode.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.swing.*;
 import java.time.Duration;
 
 /**
@@ -26,18 +28,14 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 public class AiCodeGeneratorServiceFactory {
-    @Resource
+
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
     @Resource
     private ChatHistoryService chatHistoryService;
-    @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
-    @Resource
-    private ToolManager toolManager;
+
 
     /**
      * AI 服务实例缓存
@@ -97,11 +95,14 @@ public class AiCodeGeneratorServiceFactory {
                     "Vue项目生成已迁移到VueProjectAiServiceFactory，请使用专用服务");
 
             // HTML 和多文件生成使用默认模型
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
+            case HTML, MULTI_FILE -> {
+                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
                     .build();
+            }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "不支持的代码生成类型: " + codeGenType.getValue());
         };
