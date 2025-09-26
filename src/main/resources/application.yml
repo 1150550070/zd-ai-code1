@@ -49,3 +49,13 @@ knife4j:
 
 # API配置 - 敏感信息已移至application-local.yml
 # pixabay.api-key 和 pexels.api-key 在 application-local.yml 中配置
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
