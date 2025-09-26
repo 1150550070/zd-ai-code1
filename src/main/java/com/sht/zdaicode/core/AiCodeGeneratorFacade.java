@@ -103,8 +103,8 @@ public class AiCodeGeneratorFacade {
                 VueProjectScenarioEnum scenario = vueProjectScenarioDetector.detectScenario(appId, userMessage);
                 log.info("Vue项目场景检测结果: {} - {}", scenario.getValue(), scenario.getText());
                 
-                // 获取Vue项目专用AI服务
-                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiService(appId, scenario);
+                // 使用智能工具选择器获取Vue项目专用AI服务
+                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, scenario, userMessage);
                 
                 // 根据场景调用不同的方法
                 TokenStream tokenStream = switch (scenario) {
