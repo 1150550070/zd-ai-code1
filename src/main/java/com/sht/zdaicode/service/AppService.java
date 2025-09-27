@@ -56,10 +56,10 @@ public interface AppService extends IService<App> {
      * @param appId     应用 ID
      * @param message   用户消息
      * @param loginUser 登录用户
-     * @param agent     是否为智能体
+     * @param agent     是否为智能体（Agent模式自动使用结构化输出）
      * @return 代码生成流
      */
-    Flux<String> chatToGenCode(Long appId, String message, User loginUser , boolean agent);
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent);
 
     /**
      * 部署应用

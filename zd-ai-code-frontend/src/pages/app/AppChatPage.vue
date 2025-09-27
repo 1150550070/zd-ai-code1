@@ -121,7 +121,7 @@
                 {{ useAgentMode ? 'Agent 模式' : '传统模式' }}
               </span>
               <span class="mode-desc">
-                {{ useAgentMode ? '智能图片搜集优化' : '快速文本生成' }}
+                {{ useAgentMode ? '结构化进度展示，智能图片搜集' : '快速文本生成' }}
               </span>
             </div>
           </div>
@@ -527,6 +527,7 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
     })
 
     let fullContent = ''
+    let structuredProgress: any = null
 
     // 处理接收到的消息
     eventSource.onmessage = function (event) {
@@ -537,11 +538,35 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
         const parsed = JSON.parse(event.data)
         const content = parsed.d
 
-        // 拼接内容
+        // 处理内容
         if (content !== undefined && content !== null) {
-          fullContent += content
-          messages.value[aiMessageIndex].content = fullContent
-          messages.value[aiMessageIndex].loading = false
+          if (useAgentMode.value) {
+            // Agent模式：处理结构化输出
+            try {
+              const structuredData = JSON.parse(content)
+              if (structuredData.type) {
+                // 这是结构化的Agent进度数据
+                structuredProgress = structuredData
+                messages.value[aiMessageIndex].content = formatStructuredProgress(structuredData)
+                messages.value[aiMessageIndex].loading = false
+              } else {
+                // 普通消息内容
+                fullContent += content
+                messages.value[aiMessageIndex].content = fullContent
+                messages.value[aiMessageIndex].loading = false
+              }
+            } catch (parseError) {
+              // 如果不是JSON，当作普通文本处理
+              fullContent += content
+              messages.value[aiMessageIndex].content = fullContent
+              messages.value[aiMessageIndex].loading = false
+            }
+          } else {
+            // 传统模式：直接拼接内容
+            fullContent += content
+            messages.value[aiMessageIndex].content = fullContent
+            messages.value[aiMessageIndex].loading = false
+          }
           scrollToBottom()
         }
       } catch (error) {
@@ -626,6 +651,51 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
     console.error('创建 EventSource 失败：', error)
     handleError(error, aiMessageIndex)
   }
+}
+
+// 格式化结构化进度数据为可读文本
+const formatStructuredProgress = (data: any): string => {
+  let result = ''
+
+  switch (data.type) {
+    case 'step':
+      result = `🚀 **第 ${data.currentStep}/${data.totalSteps} 步**: ${data.currentStepInfo?.stepName || data.message}\n\n`
+      if (data.currentStepInfo?.description) {
+        result += `${data.currentStepInfo.description}\n\n`
+      }
+      break
+
+    case 'progress':
+      result = `✅ **第 ${data.currentStep} 步完成**: ${data.currentStepInfo?.stepName || data.message}\n\n`
+      if (data.currentStepInfo?.result) {
+        result += `${data.currentStepInfo.result}\n\n`
+      }
+      result += `📊 **整体进度**: ${data.progressPercentage}%\n\n`
+      break
+
+    case 'complete':
+      result = `🎉 **Agent模式执行完成！**\n\n`
+      result += `✨ 所有步骤已完成，代码生成成功！\n\n`
+      if (data.allSteps && data.allSteps.length > 0) {
+        result += `**执行步骤总结**:\n`
+        data.allSteps.forEach((step: any, index: number) => {
+          result += `${index + 1}. ${step.stepName} - ${step.status === 'completed' ? '✅' : '⏳'}\n`
+        })
+        result += '\n'
+      }
+      break
+
+    case 'error':
+      result = `❌ **执行出错**: ${data.error || data.message}\n\n`
+      break
+
+    case 'message':
+    default:
+      result = data.message || data.content || ''
+      break
+  }
+
+  return result
 }
 
 // 错误处理函数

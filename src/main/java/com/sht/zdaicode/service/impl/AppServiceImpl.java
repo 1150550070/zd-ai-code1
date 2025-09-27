@@ -198,11 +198,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 6. 根据 agent 参数选择生成方式
         Flux<String> codeStream;
         if (agent) {
-            // Agent 模式：使用工作流生成代码，使用专门的流处理器
+            // Agent 模式：使用工作流生成代码，使用结构化输出
             // 6.1 调用AI生成代码前,保存用户消息到数据库中
             chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
             Flux<String> workflowStream = new CodeGenConcurrentWorkflow().executeWorkflowWithFlux(message, appId);
-            return agentModeStreamHandler.handleAgentStream(workflowStream, appId, message, loginUser.getId())
+            return agentModeStreamHandler.handleAgentStream(workflowStream, appId, message, loginUser.getId(), true)
                     .doFinally(signalType -> {
                         // 流结束时清理监控上下文（无论成功/失败/取消）
                         MonitorContextHolder.clearContext();

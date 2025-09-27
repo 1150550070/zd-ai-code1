@@ -45,7 +45,7 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item label="用户角色">
-              <a-tag v-if="profileForm.userRole === 'admin'" color="green">
+              <a-tag v-if="(profileForm as any).userRole === 'admin'" color="green">
                 管理员
               </a-tag>
               <a-tag v-else color="blue">
@@ -55,7 +55,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="注册时间">
-              <span>{{ formatTime(profileForm.createTime) }}</span>
+              <span>{{ formatTime((profileForm as any).createTime) }}</span>
             </a-form-item>
           </a-col>
         </a-row>
