@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * OSS测试控制器
  *
- * @author yupi
+ * 
  */
 @RestController
 @RequestMapping("/oss/test")

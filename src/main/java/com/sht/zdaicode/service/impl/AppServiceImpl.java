@@ -15,6 +15,7 @@ import com.sht.zdaicode.core.AiCodeGeneratorFacade;
 import com.sht.zdaicode.core.builder.VueProjectBuilder;
 import com.sht.zdaicode.core.handler.StreamHandlerExecutor;
 import com.sht.zdaicode.core.handler.AgentModeStreamHandler;
+import com.sht.zdaicode.core.handler.StructuredAgentModeStreamHandler;
 import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
 import com.sht.zdaicode.exception.ThrowUtils;
@@ -75,6 +76,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
     @Resource
     private AgentModeStreamHandler agentModeStreamHandler;
+    @Resource
+    private StructuredAgentModeStreamHandler structuredAgentModeStreamHandler;
 
     /**
      * 获取应用 vo
@@ -198,11 +201,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 6. 根据 agent 参数选择生成方式
         Flux<String> codeStream;
         if (agent) {
-            // Agent 模式：使用工作流生成代码，使用结构化输出
+            // Agent 模式：使用工作流生成代码，直接使用结构化输出处理器
             // 6.1 调用AI生成代码前,保存用户消息到数据库中
             chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
             Flux<String> workflowStream = new CodeGenConcurrentWorkflow().executeWorkflowWithFlux(message, appId);
-            return agentModeStreamHandler.handleAgentStream(workflowStream, appId, message, loginUser.getId(), true)
+            return structuredAgentModeStreamHandler.handleStructuredAgentStream(workflowStream, appId, message, loginUser.getId())
                     .doFinally(signalType -> {
                         // 流结束时清理监控上下文（无论成功/失败/取消）
                         MonitorContextHolder.clearContext();

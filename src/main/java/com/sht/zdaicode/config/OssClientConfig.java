@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 阿里云OSS配置类
  *
- * @author yupi
+ * 
  */
 @Configuration
 @ConfigurationProperties(prefix = "oss.client")

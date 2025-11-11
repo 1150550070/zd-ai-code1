@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * 截图服务实现类
  *
- * @author yupi
+ * 
  */
 @Service
 @Slf4j

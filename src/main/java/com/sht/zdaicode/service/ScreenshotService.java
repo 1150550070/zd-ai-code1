@@ -3,7 +3,7 @@ package com.sht.zdaicode.service;
 /**
  * 截图服务接口
  *
- * @author yupi
+ * 
  */
 public interface ScreenshotService {
 
