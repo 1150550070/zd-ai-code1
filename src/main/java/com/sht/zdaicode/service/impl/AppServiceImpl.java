@@ -37,6 +37,7 @@ import com.sht.zdaicode.service.ScreenshotService;
 import com.sht.zdaicode.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
@@ -78,6 +79,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private AgentModeStreamHandler agentModeStreamHandler;
     @Resource
     private StructuredAgentModeStreamHandler structuredAgentModeStreamHandler;
+    @Value("${code.deploy-host:http://localhost}")
+    private String deployHost;
 
     /**
      * 获取应用 vo
@@ -288,7 +291,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
         // 9. 构建应用访问 URL
-        String appDeployUrl = String.format("%s/static/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
+
         // 10. 异步生成应用截图并更新封面
         generateAppScreenshotAsync(appId, appDeployUrl);
         // 11. 返回可访问的 URL

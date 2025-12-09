@@ -1,5 +1,6 @@
 package com.sht.zdaicode.config;
 
+import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import lombok.Data;
 
@@ -30,14 +31,12 @@ public class RedisChatMemoryStoreConfig {
                 .port(port)
                 .password(password)
                 .ttl(ttl);
-        
-        // 只有当用户名不为空时才设置用户名
-        if (username != null && !username.trim().isEmpty()) {
-            builder.user(username);
+        if (StrUtil.isNotBlank(password)) {
+            builder.user("default");
         }
-        
         return builder.build();
     }
+
 }
 
 

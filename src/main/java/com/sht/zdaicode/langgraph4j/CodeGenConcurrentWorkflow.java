@@ -16,11 +16,6 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.bsc.langgraph4j.prebuilt.MessagesStateGraph;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
 
@@ -31,33 +26,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 @Slf4j
 public class CodeGenConcurrentWorkflow {
 
-    // 配置并发执行
-    private static final ExecutorService pool = new ThreadPoolExecutor(
-            10,  // 核心线程数
-            20,  // 最大线程数
-            0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>(100),
-            createNamedThreadFactory("Parallel-Image-Collect")
-    );
 
-    /**
-     * 创建命名线程工厂
-     */
-    private static java.util.concurrent.ThreadFactory createNamedThreadFactory(String namePrefix) {
-        AtomicInteger counter = new AtomicInteger(0);
-        return runnable -> {
-            Thread thread = new Thread(runnable);
-            thread.setName(namePrefix + "-" + counter.getAndIncrement());
-            thread.setDaemon(false);
-            return thread;
-        };
-    }
-
-    // 配置运行时配置
-    private static final org.bsc.langgraph4j.RunnableConfig runnableConfig =
-            org.bsc.langgraph4j.RunnableConfig.builder()
-                    .addParallelNodeExecutor("image_plan", pool)
-                    .build();
 
 
     /**

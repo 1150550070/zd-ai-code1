@@ -26,8 +26,13 @@ public class PromptEnhancerNode {
             // 构建增强后的提示词
             StringBuilder enhancedPromptBuilder = new StringBuilder();
             enhancedPromptBuilder.append(originalPrompt);
-            // 如果有图片资源，则添加图片信息
-            if (CollUtil.isNotEmpty(imageList) || StrUtil.isNotBlank(imageListStr)) {
+            // 预估静态文本长度 (标题 + 说明 + 示例) 约 400 字符
+            int staticTextLength = 400;
+            // 剩余可用长度 (总长度限制 1000 - 原始提示词 - 静态文本预留)
+            int remainingLength = 5000 - originalPrompt.length() - staticTextLength;
+
+            // 如果有图片资源且有剩余空间，则添加图片信息
+            if ((CollUtil.isNotEmpty(imageList) || StrUtil.isNotBlank(imageListStr)) && remainingLength > 0) {
                 enhancedPromptBuilder.append("\n\n## 可用素材资源\n");
                 enhancedPromptBuilder.append("请在生成网站使用以下图片资源，将这些图片合理地嵌入到网站的相应位置中。\n");
                 // 添加国内可访问的示例格式说明
@@ -39,19 +44,40 @@ public class PromptEnhancerNode {
 
                 if (CollUtil.isNotEmpty(imageList)) {
                     for (ImageResource image : imageList) {
-                        enhancedPromptBuilder.append("- ")
+                        // 构建单个图片描述
+                        StringBuilder imageDescBuilder = new StringBuilder();
+                        imageDescBuilder.append("- ")
                                 .append(image.getCategory().getText())
                                 .append("：")
                                 .append(image.getDescription())
                                 .append("（")
                                 .append(image.getUrl())
                                 .append("）\n");
+
+                        String imageDesc = imageDescBuilder.toString();
+                        // 检查添加此图片后是否会超长 (预留 50 字符缓冲)
+                        if (enhancedPromptBuilder.length() + imageDesc.length() < 4950) {
+                            enhancedPromptBuilder.append(imageDesc);
+                        } else {
+                            log.warn("图片列表过长，已截断后续图片以满足护轨长度限制");
+                            break;
+                        }
                     }
                 } else {
-                    enhancedPromptBuilder.append(imageListStr);
+                    // 兼容旧字段，但也要检查长度
+                    String listStr = imageListStr;
+                    if (enhancedPromptBuilder.length() + listStr.length() < 4950) {
+                        enhancedPromptBuilder.append(listStr);
+                    }
                 }
             }
+
             String enhancedPrompt = enhancedPromptBuilder.toString();
+            // 双重保险：如果仍然超过 1000，强制截断
+            if (enhancedPrompt.length() > 5000) {
+                enhancedPrompt = enhancedPrompt.substring(0, 5000);
+                log.warn("增强后提示词超过5000字符，已强制截断");
+            }
             // 更新状态
             context.setCurrentStep("提示词增强");
             context.setEnhancedPrompt(enhancedPrompt);
