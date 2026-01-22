@@ -35,7 +35,7 @@ public class FileWriteTool extends BaseTool {
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
                 // 相对路径处理，创建基于 appId 的项目目录
-                String projectDirName = "vue_project_" + appId;
+                String projectDirName = "vue_project_create_" + appId;
                 Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
                 path = projectRoot.resolve(relativeFilePath);
             }

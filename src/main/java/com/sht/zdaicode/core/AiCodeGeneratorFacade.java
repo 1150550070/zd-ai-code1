@@ -149,7 +149,7 @@ public class AiCodeGeneratorFacade {
                     })
                     .onCompleteResponse((ChatResponse completeResponse) -> {
                         // 同步构建Vue项目
-                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_create_" + appId;
                         vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
