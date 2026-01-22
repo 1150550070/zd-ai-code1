@@ -11,12 +11,12 @@ public enum VueProjectScenarioEnum {
     /**
      * 创建模式：从零开始创建Vue项目
      */
-    CREATE("create", "创建模式"),
+    VUE_PROJECT_CREATE("create", "创建模式"),
 
     /**
      * 修改模式：修改已存在的Vue项目
      */
-    EDIT("edit", "修改模式");
+    VUE_PROJECT_EDIT("edit", "修改模式");
 
     private final String value;
     private final String text;

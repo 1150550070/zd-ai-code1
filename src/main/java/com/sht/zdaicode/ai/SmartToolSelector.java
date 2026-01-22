@@ -2,6 +2,7 @@ package com.sht.zdaicode.ai;
 
 import com.sht.zdaicode.ai.tools.ToolManager;
 import com.sht.zdaicode.constant.AppConstant;
+import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
 import com.sht.zdaicode.model.enums.VueProjectScenarioEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class SmartToolSelector {
      * @param userMessage 用户消息
      * @return 优化后的工具列表
      */
-    public List<Object> selectOptimalTools(VueProjectScenarioEnum scenario, Long appId, String userMessage) {
+    public List<Object> selectOptimalTools(CodeGenTypeEnum scenario, Long appId, String userMessage) {
         log.info("智能工具选择 - 场景: {}, appId: {}, 用户消息: {}", scenario.getText(), appId, userMessage);
         
         // 分析用户操作意图
@@ -71,8 +72,9 @@ public class SmartToolSelector {
         log.debug("用户操作意图分析结果: {}", intent);
 
         return switch (scenario) {
-            case CREATE -> getCreateModeTools(intent);
-            case EDIT -> getEditModeTools(intent, appId);
+            case VUE_PROJECT_CREATE  -> getCreateModeTools(intent);
+            case VUE_PROJECT_EDIT -> getEditModeTools(intent, appId);
+            default -> throw new IllegalStateException("Unexpected value: " + scenario);
         };
     }
 

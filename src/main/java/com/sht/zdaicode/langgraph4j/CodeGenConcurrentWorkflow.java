@@ -242,7 +242,7 @@ public class CodeGenConcurrentWorkflow {
         }
         log.info("代码质检通过，继续后续流程");
         CodeGenTypeEnum generationType = context.getGenerationType();
-        if (generationType == CodeGenTypeEnum.VUE_PROJECT) {
+        if (generationType == CodeGenTypeEnum.VUE_PROJECT_CREATE || generationType == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
             return "build";
         } else {
             return "skip_build";

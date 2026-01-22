@@ -93,7 +93,7 @@ public class AiCodeGeneratorServiceFactory {
         // 根据代码生成类型选择不同的模型配置
         return switch (codeGenType) {
             // Vue 项目不在此处理，已迁移到 VueProjectAiServiceFactory
-            case VUE_PROJECT -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
+            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "Vue项目生成已迁移到VueProjectAiServiceFactory，请使用专用服务");
 
             // HTML 和多文件生成使用默认模型

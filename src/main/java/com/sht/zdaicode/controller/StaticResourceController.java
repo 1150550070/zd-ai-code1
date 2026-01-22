@@ -76,7 +76,12 @@ public class StaticResourceController {
             if (resourcePath.equals("/") || resourcePath.equals("/dist/")) {
                 resourcePath = resourcePath.equals("/") ? "/index.html" : "/dist/index.html";
             }
-            
+
+            // 处理打包后的静态资源路径，将 /assets/* 映射到 dist/assets/*
+            if (resourcePath.startsWith("/assets/")) {
+                resourcePath = "/dist" + resourcePath;
+            }
+
             // 直接使用项目根目录，不自动添加dist（因为URL中可能已经包含了dist路径）
             Path basePath = Paths.get(rootDir, resourceKey);
             String cleanResourcePath = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
@@ -85,7 +90,6 @@ public class StaticResourceController {
             String filePath = fullPath.toString();
             
             log.info("Vue项目预览访问: resourceKey={}, resourcePath={}, filePath={}", resourceKey, resourcePath, filePath);
-            
             // 检查文件是否存在
             if (!file.exists()) {
                 log.warn("Vue项目文件不存在: {}", filePath);

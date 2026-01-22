@@ -3,15 +3,14 @@ package com.sht.zdaicode.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.sht.zdaicode.ai.guardrail.PromptSafetyInputGuardrail;
-import com.sht.zdaicode.ai.guardrail.RetryOutputGuardrail;
 import com.sht.zdaicode.ai.tools.*;
 import com.sht.zdaicode.exception.BusinessException;
 import com.sht.zdaicode.exception.ErrorCode;
+import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
 import com.sht.zdaicode.model.enums.VueProjectScenarioEnum;
 import com.sht.zdaicode.service.ChatHistoryService;
 import com.sht.zdaicode.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -34,6 +33,9 @@ public class VueProjectAiServiceFactory {
     @Resource
     @Qualifier("reasoningStreamingChatModelPrototype")
     private StreamingChatModel reasoningStreamingChatModel;
+    @Resource
+    @Qualifier("streamingChatModelPrototype")
+    private StreamingChatModel streamingChatModel;
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
     @Resource
@@ -62,7 +64,7 @@ public class VueProjectAiServiceFactory {
      * @param scenario 场景（创建/修改）
      * @return Vue项目AI服务实例
      */
-    public VueProjectAiService getVueProjectAiService(long appId, VueProjectScenarioEnum scenario) {
+    public VueProjectAiService getVueProjectAiService(long appId, CodeGenTypeEnum scenario) {
         String cacheKey = buildCacheKey(appId, scenario);
         return serviceCache.get(cacheKey, key -> createVueProjectAiService(appId, scenario, null));
     }
@@ -75,7 +77,7 @@ public class VueProjectAiServiceFactory {
      * @param userMessage 用户消息（用于智能工具选择）
      * @return Vue项目AI服务实例
      */
-    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, VueProjectScenarioEnum scenario, String userMessage) {
+    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario, String userMessage) {
         // 对于智能工具选择，不使用缓存，每次都重新创建以确保工具集的准确性
         return createVueProjectAiService(appId, scenario, userMessage);
     }
@@ -83,7 +85,7 @@ public class VueProjectAiServiceFactory {
     /**
      * 构建缓存键
      */
-    private String buildCacheKey(long appId, VueProjectScenarioEnum scenario) {
+    private String buildCacheKey(long appId, CodeGenTypeEnum scenario) {
         return "vue_" + appId + "_" + scenario.getValue();
     }
 
@@ -95,7 +97,7 @@ public class VueProjectAiServiceFactory {
      * @param userMessage 用户消息（可选，用于智能工具选择）
      * @return Vue项目AI服务实例
      */
-    private VueProjectAiService createVueProjectAiService(long appId, VueProjectScenarioEnum scenario, String userMessage) {
+    private VueProjectAiService createVueProjectAiService(long appId, CodeGenTypeEnum scenario, String userMessage) {
         // 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
@@ -119,9 +121,11 @@ public class VueProjectAiServiceFactory {
             log.info("为应用 {} 创建 {} 模式的Vue项目AI服务（传统选择），工具数量: {}", appId, scenario.getText(), tools.size());
         }
 
-        reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
+        StreamingChatModel selectedModel = scenario == CodeGenTypeEnum.VUE_PROJECT_EDIT
+                ? SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class)
+                : SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
         return AiServices.builder(VueProjectAiService.class)
-                .streamingChatModel(reasoningStreamingChatModel)
+                .streamingChatModel(selectedModel)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(tools)
                 .inputGuardrails(new PromptSafetyInputGuardrail())
@@ -135,16 +139,16 @@ public class VueProjectAiServiceFactory {
      * @param scenario 场景
      * @return 工具列表
      */
-    private List<Object> getToolsByScenario(VueProjectScenarioEnum scenario) {
+    private List<Object> getToolsByScenario(CodeGenTypeEnum scenario) {
         return switch (scenario) {
-            case CREATE -> {
+            case VUE_PROJECT_CREATE -> {
                 // 创建模式：基础文件写入工具
                 log.debug("创建模式工具集（传统）：文件写入工具");
                 yield List.of(
                         toolManager.getTool("writeFile")
                 );
             }
-            case EDIT -> {
+            case VUE_PROJECT_EDIT -> {
                 // 修改模式：基础读取和修改工具
                 log.debug("修改模式工具集（传统）：文件读取、修改工具");
                 yield List.of(
@@ -164,7 +168,7 @@ public class VueProjectAiServiceFactory {
      * @param appId 应用ID（用于日志）
      * @return 工具列表
      */
-    public List<Object> getToolsForScenario(VueProjectScenarioEnum scenario, Long appId) {
+    public List<Object> getToolsForScenario(CodeGenTypeEnum scenario, Long appId) {
         List<Object> tools = getToolsByScenario(scenario);
         log.info("应用 {} 的 {} 场景工具列表: {}", appId, scenario.getText(), 
             tools.stream().map(tool -> tool.getClass().getSimpleName()).toList());

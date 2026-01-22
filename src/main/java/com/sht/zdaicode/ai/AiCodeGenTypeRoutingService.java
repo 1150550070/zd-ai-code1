@@ -19,5 +19,14 @@ public interface AiCodeGenTypeRoutingService {
      */
     @SystemMessage(fromResource = "prompt/codegen-routing-system-prompt.txt")
     CodeGenTypeEnum routeCodeGenType(String userPrompt);
+
+    /**
+     * 根据用户需求智能选择Vue项目场景(创建模式/编辑模式)
+     *
+     * @param userPrompt 用户输入的需求描述
+     * @return 推荐的Vue项目场景(创建模式/编辑模式)
+     */
+    @SystemMessage(fromResource = "prompt/codegen-vue-project-scenario-routing-system-prompt.txt")
+    CodeGenTypeEnum routeVueProjectScenario(String userPrompt);
 }
 

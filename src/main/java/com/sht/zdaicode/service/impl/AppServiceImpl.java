@@ -266,7 +266,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         //Vue 项目特殊处理,执行构建
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE || codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
             boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
             ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
             //检查dist目录是否存在

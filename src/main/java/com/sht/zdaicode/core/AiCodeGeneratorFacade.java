@@ -1,11 +1,7 @@
 package com.sht.zdaicode.core;
 
 import cn.hutool.json.JSONUtil;
-import com.sht.zdaicode.ai.AiCodeGeneratorService;
-import com.sht.zdaicode.ai.AiCodeGeneratorServiceFactory;
-import com.sht.zdaicode.ai.VueProjectAiService;
-import com.sht.zdaicode.ai.VueProjectAiServiceFactory;
-import com.sht.zdaicode.ai.VueProjectScenarioDetector;
+import com.sht.zdaicode.ai.*;
 import com.sht.zdaicode.ai.model.HtmlCodeResult;
 import com.sht.zdaicode.ai.model.MultiFileCodeResult;
 import com.sht.zdaicode.ai.model.message.AiResponseMessage;
@@ -29,6 +25,9 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 
+import static com.sht.zdaicode.model.enums.VueProjectScenarioEnum.VUE_PROJECT_CREATE;
+import static com.sht.zdaicode.model.enums.VueProjectScenarioEnum.VUE_PROJECT_EDIT;
+
 /**
  * AI 代码生成外观类，组合生成和保存功能
  */
@@ -41,9 +40,9 @@ public class AiCodeGeneratorFacade {
     @Resource
     private VueProjectAiServiceFactory vueProjectAiServiceFactory;
     @Resource
-    private VueProjectScenarioDetector vueProjectScenarioDetector;
-    @Resource
     private VueProjectBuilder vueProjectBuilder;
+    @Resource
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -52,27 +51,27 @@ public class AiCodeGeneratorFacade {
      * @param codeGenTypeEnum 生成类型
      * @return 保存的目录
      */
-    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
-        if (codeGenTypeEnum == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
-        }
-        //根据appId获取相应的Ai服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
-        return switch (codeGenTypeEnum) {
-            case HTML -> {
-                HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
-                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.HTML, appId);
-            }
-            case MULTI_FILE -> {
-                MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode(userMessage);
-                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.MULTI_FILE, appId);
-            }
-            default -> {
-                String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMessage);
-            }
-        };
-    }
+//    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
+//        if (codeGenTypeEnum == null) {
+//            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
+//        }
+//        //根据appId获取相应的Ai服务实例
+//        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
+//        return switch (codeGenTypeEnum) {
+//            case HTML -> {
+//                HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
+//                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.HTML, appId);
+//            }
+//            case MULTI_FILE -> {
+//                MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode(userMessage);
+//                yield CodeFileSaverExecutor.executeSaver(result, CodeGenTypeEnum.MULTI_FILE, appId);
+//            }
+//            default -> {
+//                String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
+//                throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMessage);
+//            }
+//        };
+//    }
 
     /**
      * 统一入口：根据类型生成并保存代码（流式）
@@ -98,18 +97,23 @@ public class AiCodeGeneratorFacade {
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
-            case VUE_PROJECT -> {
+            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
                 // 检测Vue项目场景（创建/修改）
-                VueProjectScenarioEnum scenario = vueProjectScenarioDetector.detectScenario(appId, userMessage);
-                log.info("Vue项目场景检测结果: {} - {}", scenario.getValue(), scenario.getText());
+                //根据appId获取相应的Ai服务实例
+                AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+                //根据用户需求智能选择Vue项目场景(创建模式/编辑模式)
+                CodeGenTypeEnum vueProjectScenario = aiCodeGenTypeRoutingService.routeVueProjectScenario(userMessage);
+                log.info("Vue项目场景检测结果: {} - {}", vueProjectScenario.getValue(), vueProjectScenario.getText());
+
                 
                 // 使用智能工具选择器获取Vue项目专用AI服务
-                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, scenario, userMessage);
+                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, vueProjectScenario, userMessage);
                 
                 // 根据场景调用不同的方法
-                TokenStream tokenStream = switch (scenario) {
-                    case CREATE -> vueProjectAiService.createVueProjectCodeStream(appId, userMessage);
-                    case EDIT -> vueProjectAiService.editVueProjectCodeStream(appId, userMessage);
+                TokenStream tokenStream = switch (vueProjectScenario) {
+                    case VUE_PROJECT_CREATE -> vueProjectAiService.createVueProjectCodeStream(appId, userMessage);
+                    case VUE_PROJECT_EDIT -> vueProjectAiService.editVueProjectCodeStream(appId, userMessage);
+                    default -> throw new IllegalStateException("Unexpected value: " + vueProjectScenario);
                 };
                 
                 yield processTokenStream(tokenStream, appId);
