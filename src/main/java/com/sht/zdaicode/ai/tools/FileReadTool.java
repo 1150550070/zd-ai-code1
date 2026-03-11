@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 
 /**
  * 文件读取工具
- * 策略：Vue项目采用增量修改，目录固定为 vue_project_create_{appId}
+ * 支持 AI 通过工具调用的方式读取文件内容
  */
 @Slf4j
 @Component
@@ -29,20 +29,13 @@ public class FileReadTool extends BaseTool {
     ) {
         try {
             Path path = Paths.get(relativeFilePath);
-            // 核心修正：严格遵守统一的目录命名规则
             if (!path.isAbsolute()) {
                 String projectDirName = "vue_project_create_" + appId;
                 Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
                 path = projectRoot.resolve(relativeFilePath);
             }
-
-            log.info("执行读取: {}", path);
-
-            if (!Files.exists(path)) {
-                return "错误：文件不存在 - " + relativeFilePath;
-            }
-            if (!Files.isRegularFile(path)) {
-                return "错误：路径不是一个文件 - " + relativeFilePath;
+            if (!Files.exists(path) || !Files.isRegularFile(path)) {
+                return "错误：文件不存在或不是文件 - " + relativeFilePath;
             }
             return Files.readString(path);
         } catch (IOException e) {
@@ -51,6 +44,9 @@ public class FileReadTool extends BaseTool {
             return errorMessage;
         }
     }
+
+
+    // 核心方法不变，此处省略
 
     @Override
     public String getToolName() {
@@ -64,8 +60,9 @@ public class FileReadTool extends BaseTool {
 
     @Override
     public String generateToolExecutedResult(JSONObject arguments) {
-        // 用于前端展示工具调用过程
         String relativeFilePath = arguments.getStr("relativeFilePath");
         return String.format("[工具调用] %s %s", getDisplayName(), relativeFilePath);
     }
+
+
 }

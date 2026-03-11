@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * Vue项目专用AI服务工厂
- * 修复版：在编辑模式下【强制禁用】SmartToolSelector，物理隔离 writeFile 工具
+ * 根据场景（创建/修改）提供不同的工具集和配置
  */
 @Slf4j
 @Component
@@ -57,23 +57,48 @@ public class VueProjectAiServiceFactory {
             })
             .build();
 
-    public VueProjectAiService getVueProjectAiService(long appId, VueProjectScenarioEnum scenario) {
+    /**
+     * 根据应用ID和场景获取Vue项目AI服务
+     *
+     * @param appId 应用ID
+     * @param scenario 场景（创建/修改）
+     * @return Vue项目AI服务实例
+     */
+    public VueProjectAiService getVueProjectAiService(long appId, CodeGenTypeEnum scenario) {
         String cacheKey = buildCacheKey(appId, scenario);
         return serviceCache.get(cacheKey, key -> createVueProjectAiService(appId, scenario, null));
     }
 
-    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, VueProjectScenarioEnum scenario,
-            String userMessage) {
-        // 每次重新创建以确保工具集准确
+    /**
+     * 根据应用ID、场景和用户消息获取Vue项目AI服务（智能工具选择）
+     *
+     * @param appId 应用ID
+     * @param scenario 场景（创建/修改）
+     * @param userMessage 用户消息（用于智能工具选择）
+     * @return Vue项目AI服务实例
+     */
+    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario, String userMessage) {
+        // 对于智能工具选择，不使用缓存，每次都重新创建以确保工具集的准确性
         return createVueProjectAiService(appId, scenario, userMessage);
     }
 
-    private String buildCacheKey(long appId, VueProjectScenarioEnum scenario) {
+    /**
+     * 构建缓存键
+     */
+    private String buildCacheKey(long appId, CodeGenTypeEnum scenario) {
         return "vue_" + appId + "_" + scenario.getValue();
     }
 
-    private VueProjectAiService createVueProjectAiService(long appId, VueProjectScenarioEnum scenario,
-            String userMessage) {
+    /**
+     * 创建Vue项目AI服务实例
+     *
+     * @param appId 应用ID
+     * @param scenario 场景
+     * @param userMessage 用户消息（可选，用于智能工具选择）
+     * @return Vue项目AI服务实例
+     */
+    private VueProjectAiService createVueProjectAiService(long appId, CodeGenTypeEnum scenario, String userMessage) {
+        // 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
                 .id(appId)
@@ -81,75 +106,80 @@ public class VueProjectAiServiceFactory {
                 .maxMessages(20)
                 .build();
 
+        // 从数据库加载历史对话到记忆中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
+        // 根据场景和用户消息智能选择工具集
         List<Object> tools;
-
-        // =========================================================================
-        // 核心修复逻辑：优先级调整
-        // 1. 如果是编辑模式 (VUE_PROJECT_EDIT)，绝对禁止使用智能选择器。
-        // 必须强制使用 getToolsByScenario 返回的“只读+修改”工具集。
-        // =========================================================================
-        if (scenario == VueProjectScenarioEnum.VUE_PROJECT_EDIT) {
+        if (userMessage != null && !userMessage.trim().isEmpty()) {
+            // 使用智能工具选择器
+            tools = smartToolSelector.selectOptimalTools(scenario, appId, userMessage);
+            log.info("为应用 {} 创建 {} 模式的Vue项目AI服务（智能选择），工具数量: {}", appId, scenario.getText(), tools.size());
+        } else {
+            // 使用传统工具选择
             tools = getToolsByScenario(scenario);
-            log.info("应用 {} 处于编辑模式：强制使用严格工具集（禁用智能选择），工具数量: {}", appId, tools.size());
-        }
-        // 2. 只有在创建模式下，才允许尝试智能选择
-        else if (userMessage != null && !userMessage.trim().isEmpty()) {
-            try {
-                tools = smartToolSelector.selectOptimalTools(scenario, appId, userMessage);
-                log.info("应用 {} 处于创建模式：启用智能工具选择，工具数量: {}", appId, tools.size());
-            } catch (Exception e) {
-                log.warn("智能工具选择失败，回退到默认工具集", e);
-                tools = getToolsByScenario(scenario);
-            }
-        }
-        // 3. 默认回退
-        else {
-            tools = getToolsByScenario(scenario);
-            log.info("使用默认工具集，工具数量: {}", tools.size());
+            log.info("为应用 {} 创建 {} 模式的Vue项目AI服务（传统选择），工具数量: {}", appId, scenario.getText(), tools.size());
         }
 
-        // 选择模型 (Reasoning 模型常这里指向 qwen-max，适合创建满载工具；普通模型 deepseek-chat 适合小修小改)
-        StreamingChatModel selectedModel = scenario == VueProjectScenarioEnum.VUE_PROJECT_EDIT
+        StreamingChatModel selectedModel = scenario == CodeGenTypeEnum.VUE_PROJECT_EDIT
                 ? SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class)
                 : SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
-
         return AiServices.builder(VueProjectAiService.class)
                 .streamingChatModel(selectedModel)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(tools)
                 .inputGuardrails(new PromptSafetyInputGuardrail())
+//                .outputGuardrails(new RetryOutputGuardrail())
                 .build();
     }
 
     /**
-     * 获取严格的场景工具集
+     * 根据场景获取对应的工具集（传统模式）
+     *
+     * @param scenario 场景
+     * @return 工具列表
      */
-    private List<Object> getToolsByScenario(VueProjectScenarioEnum scenario) {
+    private List<Object> getToolsByScenario(CodeGenTypeEnum scenario) {
         return switch (scenario) {
             case VUE_PROJECT_CREATE -> {
-                log.debug("创建模式工具集：允许写入");
-                yield List.of(toolManager.getTool("writeFile"));
+                // 创建模式：基础文件写入工具
+                log.debug("创建模式工具集（传统）：文件写入工具");
+                yield List.of(
+                        toolManager.getTool("writeFile")
+                );
             }
             case VUE_PROJECT_EDIT -> {
-                log.debug("修改模式工具集：只允许读取和修改 (物理隔离 writeFile)");
-                // 关键点：列表中绝对没有 writeFile
+                // 修改模式：基础读取和修改工具
+                log.debug("修改模式工具集（传统）：文件读取、修改工具");
                 yield List.of(
                         toolManager.getTool("readFile"),
-                        toolManager.getTool("modifyFile"));
+                        toolManager.getTool("modifyFile")
+                );
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "不支持的Vue项目场景: " + scenario.getValue());
         };
     }
 
-    // ... 其他辅助方法保持不变 ...
-    public List<Object> getToolsForScenario(VueProjectScenarioEnum scenario, Long appId) {
-        return getToolsByScenario(scenario);
+    /**
+     * 获取指定场景的工具列表（用于测试和调试）
+     *
+     * @param scenario 场景
+     * @param appId 应用ID（用于日志）
+     * @return 工具列表
+     */
+    public List<Object> getToolsForScenario(CodeGenTypeEnum scenario, Long appId) {
+        List<Object> tools = getToolsByScenario(scenario);
+        log.info("应用 {} 的 {} 场景工具列表: {}", appId, scenario.getText(), 
+            tools.stream().map(tool -> tool.getClass().getSimpleName()).toList());
+        return tools;
     }
 
+    /**
+     * 清除缓存
+     */
     public void clearCache() {
         serviceCache.invalidateAll();
+        log.info("Vue项目AI服务缓存已清除");
     }
 }

@@ -64,7 +64,7 @@ public class SmartToolSelector {
      * @param userMessage 用户消息
      * @return 优化后的工具列表
      */
-    public List<Object> selectOptimalTools(VueProjectScenarioEnum scenario, Long appId, String userMessage) {
+    public List<Object> selectOptimalTools(CodeGenTypeEnum scenario, Long appId, String userMessage) {
         log.info("智能工具选择 - 场景: {}, appId: {}, 用户消息: {}", scenario.getText(), appId, userMessage);
         
         // 分析用户操作意图

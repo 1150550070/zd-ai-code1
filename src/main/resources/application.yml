@@ -16,7 +16,7 @@ spring:
     timeout: 2592000
 
   profiles:
-    active: prod
+    active: local
 
 # 阿里云OSS对象存储配置 - 敏感信息已移至application-local.yml
 oss:

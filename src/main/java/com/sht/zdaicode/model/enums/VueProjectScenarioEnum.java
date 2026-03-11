@@ -14,9 +14,9 @@ public enum VueProjectScenarioEnum {
     VUE_PROJECT_CREATE("create", "创建模式"),
 
     /**
-     * 编辑模式：修改已存在的Vue项目
+     * 修改模式：修改已存在的Vue项目
      */
-    VUE_PROJECT_EDIT("edit", "编辑模式");
+    VUE_PROJECT_EDIT("edit", "修改模式");
 
     private final String value;
     private final String text;

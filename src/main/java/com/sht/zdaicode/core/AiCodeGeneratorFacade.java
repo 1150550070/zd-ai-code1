@@ -25,7 +25,8 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 
-
+import static com.sht.zdaicode.model.enums.VueProjectScenarioEnum.VUE_PROJECT_CREATE;
+import static com.sht.zdaicode.model.enums.VueProjectScenarioEnum.VUE_PROJECT_EDIT;
 
 /**
  * AI 代码生成外观类，组合生成和保存功能
@@ -96,12 +97,12 @@ public class AiCodeGeneratorFacade {
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
-            case VUE_PROJECT_CREATE -> {
+            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
                 // 检测Vue项目场景（创建/修改）
                 //根据appId获取相应的Ai服务实例
                 AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
                 //根据用户需求智能选择Vue项目场景(创建模式/编辑模式)
-                VueProjectScenarioEnum vueProjectScenario = aiCodeGenTypeRoutingService.routeVueProjectScenario(userMessage);
+                CodeGenTypeEnum vueProjectScenario = aiCodeGenTypeRoutingService.routeVueProjectScenario(userMessage);
                 log.info("Vue项目场景检测结果: {} - {}", vueProjectScenario.getValue(), vueProjectScenario.getText());
 
                 
