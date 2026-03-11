@@ -48,7 +48,26 @@ const visible = computed({
 
 const handleCopyUrl = async () => {
   try {
-    await navigator.clipboard.writeText(props.deployUrl)
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(props.deployUrl)
+    } else {
+      // 降级方案：在非安全上下文（如HTTP）使用 textarea 和 document.execCommand
+      const textArea = document.createElement("textarea");
+      textArea.value = props.deployUrl;
+      // 使其不可见
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+      document.body.prepend(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (error) {
+        console.error('Fallback copy 执行失败', error);
+        throw error;
+      } finally {
+        textArea.remove();
+      }
+    }
     message.success('链接已复制到剪贴板')
   } catch (error) {
     console.error('复制失败：', error)

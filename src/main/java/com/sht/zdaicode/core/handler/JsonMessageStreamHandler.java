@@ -76,32 +76,53 @@ public class JsonMessageStreamHandler {
             case AI_RESPONSE -> {
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
                 String data = aiMessage.getData();
-                // 直接拼接响应
                 chatHistoryStringBuilder.append(data);
                 return data;
             }
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
-                // 检查是否是第一次看到这个工具 ID
                 if (toolId != null && !seenToolIds.contains(toolId)) {
-                    // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    // 根据实际工具名称动态显示
                     String toolName = getToolDisplayName(toolRequestMessage.getName());
                     return String.format("\n\n[选择工具] %s\n\n", toolName);
                 } else {
-                    // 不是第一次调用这个工具，直接返回空
                     return "";
                 }
             }
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
-                JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
+                JSONObject argsJson = JSONUtil.parseObj(toolExecutedMessage.getArguments());
+
+                String relativeFilePath = argsJson.getStr("relativeFilePath");
                 String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                // 根据实际工具名称动态显示
+
+                // --- 修复开始：智能获取展示内容 ---
+                String content = null;
+                String toolNameKey = toolExecutedMessage.getName();
+
+                if ("readFile".equals(toolNameKey)) {
+                    // 1. 读取文件：内容在 Result（返回值）中
+                    content = toolExecutedMessage.getResult();
+                } else if ("modifyFile".equals(toolNameKey)) {
+                    // 2. 修改文件：优先展示"改成了什么"(newContent)
+                    content = argsJson.getStr("newContent");
+                } else if ("writeFile".equals(toolNameKey)) {
+                    // 3. 写入文件：内容在入参的 content 字段
+                    content = argsJson.getStr("content");
+                }
+
+                // 4. 兜底：如果没取到，或者发生了错误（Result里包含错误信息），优先展示 Result
+                if (StrUtil.isEmpty(content) || (toolExecutedMessage.getResult() != null && toolExecutedMessage.getResult().startsWith("错误"))) {
+                    content = toolExecutedMessage.getResult();
+                }
+
+                // 5. 最终防空
+                if (content == null) {
+                    content = "执行成功 (无返回内容)";
+                }
+                // --- 修复结束 ---
+
                 String toolName = getToolDisplayName(toolExecutedMessage.getName());
                 String result = String.format("""
                         [工具调用] %s %s
@@ -109,7 +130,7 @@ public class JsonMessageStreamHandler {
                         %s
                         ```
                         """, toolName, relativeFilePath, suffix, content);
-                // 输出前端和要持久化的内容
+
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
                 return output;

@@ -1,6 +1,7 @@
 package com.sht.zdaicode.ai;
 
 import com.sht.zdaicode.model.enums.CodeGenTypeEnum;
+import com.sht.zdaicode.model.enums.VueProjectScenarioEnum;
 import dev.langchain4j.service.SystemMessage;
 
 /**
@@ -27,6 +28,6 @@ public interface AiCodeGenTypeRoutingService {
      * @return 推荐的Vue项目场景(创建模式/编辑模式)
      */
     @SystemMessage(fromResource = "prompt/codegen-vue-project-scenario-routing-system-prompt.txt")
-    CodeGenTypeEnum routeVueProjectScenario(String userPrompt);
+    VueProjectScenarioEnum routeVueProjectScenario(String userPrompt);
 }
 

@@ -200,7 +200,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                         .codeGenType(codeGenTypeEnum)
                         .build()
         );
-        
+
         // 6. 根据 agent 参数选择生成方式
         Flux<String> codeStream;
         if (agent) {
@@ -226,7 +226,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                     });
         }
     }
-
 
 
 
@@ -266,7 +265,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         //Vue 项目特殊处理,执行构建
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE || codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE ) {
             boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
             ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
             //检查dist目录是否存在
@@ -371,7 +370,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 updateApp.setCover(screenshotUrl);
                 boolean updated = this.updateById(updateApp);
                 ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("异步生成应用截图失败，appId: {}, appUrl: {}", appId, appUrl, e);
             }
         });
