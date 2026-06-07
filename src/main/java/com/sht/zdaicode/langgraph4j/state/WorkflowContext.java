@@ -14,6 +14,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * 工作流上下文 - 存储所有状态信息
@@ -28,6 +29,8 @@ public class WorkflowContext implements Serializable {
      * WorkflowContext 在 MessagesState 中的存储key
      */
     public static final String WORKFLOW_CONTEXT_KEY = "workflowContext";
+
+    private transient Consumer<String> tokenEmitter = token -> {};
 
     /**
      * 当前执行步骤

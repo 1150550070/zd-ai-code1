@@ -530,48 +530,76 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
     let structuredProgress: any = null
 
     // 处理接收到的消息
+    // 处理接收到的消息
     eventSource.onmessage = function (event) {
       if (streamCompleted) return
 
       try {
-        // 解析JSON包装的数据
-        const parsed = JSON.parse(event.data)
-        const content = parsed.d
+        let rawData = event.data;
+        let contentToAppend = ''; // 用来暂存当前这个片段要追加的内容
 
-        // 处理内容
-        if (content !== undefined && content !== null) {
+        // 第一步：尝试解析最外层数据 (因为后端可能包装了 { "d": "..." })
+        let parsedData = null;
+        let isJson = false;
+        try {
+          parsedData = JSON.parse(rawData);
+          isJson = true;
+        } catch (e) {
+          // 🔴 修复1：如果解析失败，说明是大模型吐出的纯文本/代码片段
+          // 捕获异常，不要崩溃，处理一下转义的换行符
+          rawData = rawData.replace(/\\n/g, '\n');
+        }
+
+        if (isJson) {
+          // 提取真实内容，兼容带有 'd' 包装或直接返回的情况
+          let innerContent = parsedData.d !== undefined ? parsedData.d : parsedData;
+
           if (useAgentMode.value) {
-            // Agent模式：处理结构化输出
-            try {
-              const structuredData = JSON.parse(content)
-              if (structuredData.type) {
-                // 这是结构化的Agent进度数据
-                structuredProgress = structuredData
-                messages.value[aiMessageIndex].content = formatStructuredProgress(structuredData)
-                messages.value[aiMessageIndex].loading = false
-              } else {
-                // 普通消息内容
-                fullContent += content
-                messages.value[aiMessageIndex].content = fullContent
-                messages.value[aiMessageIndex].loading = false
+            // Agent 模式：尝试解析内层是否为结构化数据 (Agent步骤)
+            let isInnerJson = false;
+            let innerParsed = null;
+
+            if (typeof innerContent === 'string') {
+              try {
+                innerParsed = JSON.parse(innerContent);
+                isInnerJson = true;
+              } catch (e) {
+                // 内层不是 JSON，是普通文本或代码 Token
               }
-            } catch (parseError) {
-              // 如果不是JSON，当作普通文本处理
-              fullContent += content
-              messages.value[aiMessageIndex].content = fullContent
-              messages.value[aiMessageIndex].loading = false
+            } else if (typeof innerContent === 'object') {
+              innerParsed = innerContent;
+              isInnerJson = true;
+            }
+
+            if (isInnerJson && innerParsed && innerParsed.type) {
+              // 🔴 修复2：这是结构化的Agent进度数据，格式化后作为“待追加内容”
+              contentToAppend = formatStructuredProgress(innerParsed);
+            } else {
+              // 普通消息内容 (比如正在生成代码)
+              contentToAppend = typeof innerContent === 'string' ? innerContent : JSON.stringify(innerContent);
             }
           } else {
-            // 传统模式：直接拼接内容
-            fullContent += content
-            messages.value[aiMessageIndex].content = fullContent
-            messages.value[aiMessageIndex].loading = false
+            // 传统模式：直接提取内容
+            contentToAppend = typeof innerContent === 'string' ? innerContent : JSON.stringify(innerContent);
           }
-          scrollToBottom()
+        } else {
+          // 最外层就不是 JSON，说明是纯代码 Token（如 "<template>"），直接原样作为“待追加内容”
+          contentToAppend = rawData;
         }
+
+        // 第二步：统一执行追加并更新 UI
+        if (contentToAppend !== undefined && contentToAppend !== null && contentToAppend !== '') {
+          // 🔴 修复3：永远使用 += 追加，不要覆盖！
+          fullContent += contentToAppend;
+          messages.value[aiMessageIndex].content = fullContent;
+          messages.value[aiMessageIndex].loading = false;
+          scrollToBottom();
+        }
+
       } catch (error) {
-        console.error('解析消息失败:', error)
-        handleError(error, aiMessageIndex)
+        // 🔴 修复4：移除 handleError！
+        // 这里的解析异常只打印警告，绝不中断生成流，否则前端会报错说生成失败
+        console.warn('处理消息片段时发生异常，但不中断流:', error, '原始数据:', event.data);
       }
     }
 

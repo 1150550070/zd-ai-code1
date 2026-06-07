@@ -249,16 +249,16 @@ onMounted(() => {
           type="default"
           @click="
             setPrompt(
-              '创建一个现代化的个人博客网站，包含文章列表、详情页、分类标签、搜索功能、评论系统和个人简介页面。采用简洁的设计风格，支持响应式布局，文章支持Markdown格式，首页展示最新文章和热门推荐。',
+              '创建一个现代化的个人主页网站，包含个人简介页面、个人爱好页面等。采用简洁的设计风格，支持响应式布局。',
             )
           "
-          >个人博客网站</a-button
+          >个人主页网站</a-button
         >
         <a-button
           type="default"
           @click="
             setPrompt(
-              '设计一个专业的企业官网，包含公司介绍、产品服务展示、新闻资讯、联系我们等页面。采用商务风格的设计，包含轮播图、产品展示卡片、团队介绍、客户案例展示，支持多语言切换和在线客服功能。',
+              '设计一个专业的企业官网，包含公司介绍、产品服务展示、联系我们等页面。采用商务风格的设计，包含轮播图、产品展示卡片、团队介绍、客户案例展示，支持多语言切换和在线客服功能。',
             )
           "
           >企业官网</a-button
@@ -279,7 +279,7 @@ onMounted(() => {
               '制作一个精美的作品展示网站，适合设计师、摄影师、艺术家等创作者。包含作品画廊、项目详情页、个人简历、联系方式等模块。采用瀑布流或网格布局展示作品，支持图片放大预览和作品分类筛选。',
             )
           "
-          >作品展示网站</a-button
+          >作品网站</a-button
         >
       </div>
 
@@ -309,7 +309,7 @@ onMounted(() => {
 
       <!-- 精选案例 -->
       <div class="section">
-        <h2 class="section-title">精选案例</h2>
+        <h2 class="section-title">精选应用</h2>
         <div class="featured-grid">
           <AppCard
             v-for="app in featuredApps"
@@ -326,7 +326,7 @@ onMounted(() => {
             v-model:page-size="featuredAppsPage.pageSize"
             :total="featuredAppsPage.total"
             :show-size-changer="false"
-            :show-total="(total: number) => `共 ${total} 个案例`"
+            :show-total="(total: number) => `共 ${total} 个应用`"
             @change="loadFeaturedApps"
           />
         </div>

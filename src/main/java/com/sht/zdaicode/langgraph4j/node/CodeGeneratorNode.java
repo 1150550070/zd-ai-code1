@@ -12,6 +12,8 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
@@ -19,7 +21,7 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 public class CodeGeneratorNode {
 
     public static AsyncNodeAction<MessagesState<String>> create() {
-        return node_async(state -> {
+        return state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: 代码生成");
 
@@ -30,25 +32,65 @@ public class CodeGeneratorNode {
             // 获取 AI 代码生成外观服务
             AiCodeGeneratorFacade codeGeneratorFacade = SpringContextUtil.getBean(AiCodeGeneratorFacade.class);
             log.info("开始生成代码，类型: {} ({})", generationType.getValue(), generationType.getText());
-            // 从上下文中获取真实的 appId
-            Long appId = context.getAppId();
-            if (appId == null || appId == 0L) {
-                log.warn("WorkflowContext 中的 appId 为空或为0，使用默认值");
-                appId = 0L;
+            // 从上下文中获取真实的 appId，并使用三元运算保证只赋值一次 (有效 final)
+            Long rawAppId = context.getAppId();
+            Long appId = (rawAppId == null || rawAppId == 0L) ? 0L : rawAppId;
+
+            if (appId == 0L) {
+                log.warn("WorkflowContext 中的 appId 为空或为0，使用默认值 0L");
             }
+            // 创建一个 CompletableFuture，用于挂起图执行引擎，等待流式任务完成
+            CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
+            StringBuilder fullCode = new StringBuilder();
+
+            // 修改 2：通知前端准备接收代码块
+            if (context.getTokenEmitter() != null) {
+                context.getTokenEmitter().accept("\n```vue\n");
+            }
+
             // 调用流式代码生成
             Flux<String> codeStream = codeGeneratorFacade.generateAndSaveCodeStream(userMessage, generationType, appId);
-            // 同步等待流式输出完成
-            codeStream.blockLast(Duration.ofMinutes(10)); // 最多等待 10 分钟
-            // 根据类型设置生成目录
-            String generatedCodeDir = String.format("%s/%s_%s", AppConstant.CODE_OUTPUT_ROOT_DIR, generationType.getValue(), appId);
-            log.info("AI 代码生成完成，生成目录: {}", generatedCodeDir);
 
-            // 更新状态
-            context.setCurrentStep("代码生成");
-            context.setGeneratedCodeDir(generatedCodeDir);
-            return WorkflowContext.saveContext(context);
-        });
+            codeStream.subscribe(
+                    token -> {
+                        // 每产生一个字，就通过 WorkflowContext 里绑定的 sink 实时推给前端
+                        if (context.getTokenEmitter() != null) {
+                            context.getTokenEmitter().accept(token);
+                        }
+                        // 把代码收集起来，供后续质检节点使用
+                        fullCode.append(token);
+                    },
+                    // 发生异常时：onError
+                    error -> {
+                        log.error("流式代码生成失败", error);
+                        if (context.getTokenEmitter() != null) {
+                            context.getTokenEmitter().accept("\n\n❌ [AI生成中断: " + error.getMessage() + "]\n");
+                        }
+                        // 必须标记 future 异常，否则工作流会死锁
+                        future.completeExceptionally(error);
+                    },
+                    // 流完成时：onComplete
+                    () -> {
+                        // 通知前端代码块闭合
+                        if (context.getTokenEmitter() != null) {
+                            context.getTokenEmitter().accept("\n```\n\n");
+                        }
+
+
+                        // 根据类型设置生成目录
+                        String generatedCodeDir = String.format("%s/%s_%s", AppConstant.CODE_OUTPUT_ROOT_DIR, generationType.getValue(), appId);
+                        log.info("AI 代码生成完成，生成目录: {}", generatedCodeDir);
+
+                        // 更新状态
+                        context.setCurrentStep("代码生成");
+                        context.setGeneratedCodeDir(generatedCodeDir);
+                        context.setGeneratedCode(fullCode.toString());
+                        // 释放 Future，正式通知 LangGraph 工作流进入下一步
+                        future.complete(WorkflowContext.saveContext(context));
+                    }
+            );
+        return future;
+        };
     }
 
     /**
