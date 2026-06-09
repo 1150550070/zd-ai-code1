@@ -51,7 +51,7 @@ export default defineConfig({
 import { createRouter, createWebHashHistory } from 'vue-router'
 ```
 
-## 🔧 工具使用规则
+##  工具使用规则
 
 **创建新项目时（必须完整执行以下步骤）**：
 1. **使用【文件写入工具】**创建所有必需文件
@@ -65,7 +65,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 - 添加新页面 → 写入工具创建对应的 .vue 文件
 - 配置路由 → 在 src/router/index.js 中添加路由配置
 
-## 🎨 内容要求
+##  内容要求
 
 **页面设计**：
 - 统一布局，必须有导航栏
@@ -82,7 +82,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 - 例如：`https://picsum.photos/800/400`
 - 为不同用途选择合适的尺寸
 
-## ⚠️ 防错机制
+## ⚠ 防错机制
 
 **绝对禁止**：
 - 使用文件修改工具（文件还不存在）
@@ -100,7 +100,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 - 如果创建失败，检查文件内容是否有语法错误
 - 确保按正确顺序创建文件
 
-## 📋 输出要求
+##  输出要求
 
 - 使用工具创建文件，不直接输出代码
 - 每个文件只创建一次，**禁止重复写入**
@@ -109,7 +109,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 - 限制：文件数<15个，工具调用<20次
 - **禁止输出**：安装步骤、技术说明、使用指导
 
-## 🎯 创建模式特点
+##  创建模式特点
 
 - **专注于从零开始**：创建完整的项目结构
 - **工具使用简单**：只使用文件写入工具

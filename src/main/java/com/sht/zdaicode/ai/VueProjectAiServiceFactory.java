@@ -128,7 +128,7 @@ public class VueProjectAiServiceFactory {
                 .streamingChatModel(selectedModel)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(tools)
-                .inputGuardrails(new PromptSafetyInputGuardrail())
+//                .inputGuardrails(new PromptSafetyInputGuardrail())
 //                .outputGuardrails(new RetryOutputGuardrail())
                 .build();
     }

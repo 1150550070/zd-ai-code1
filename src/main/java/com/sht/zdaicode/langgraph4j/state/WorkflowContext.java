@@ -1,5 +1,6 @@
 package com.sht.zdaicode.langgraph4j.state;
 
+import com.sht.zdaicode.ai.model.scheam.ProjectScheam;
 import com.sht.zdaicode.langgraph4j.model.ImageCollectionPlan;
 import com.sht.zdaicode.langgraph4j.model.ImageResource;
 import com.sht.zdaicode.langgraph4j.model.QualityResult;
@@ -96,6 +97,31 @@ public class WorkflowContext implements Serializable {
      * 应用 ID
      */
     private Long appId = 0L;
+
+    /**
+     * 全栈项目的全局数据结构 (Step 1 产出的中间态)
+     */
+    private ProjectScheam projectSchema;
+
+    /**
+     * 自动生成的数据库初始化 SQL 脚本
+     */
+    private String databaseInitSql;
+
+    /**
+     * 后端代码临时生成目录
+     */
+    private String backendCodeDir;
+
+    /**
+     * 前端代码临时生成目录
+     */
+    private String frontendCodeDir;
+
+    /**
+     * 最终统一的全栈工程根目录
+     */
+    private String unifiedProjectDir;
 
 
 

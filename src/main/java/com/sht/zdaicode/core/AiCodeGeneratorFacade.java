@@ -43,6 +43,8 @@ public class AiCodeGeneratorFacade {
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+    @Resource
+    private BackendProjectAiServiceFactory backendProjectAiServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -86,38 +88,59 @@ public class AiCodeGeneratorFacade {
 
         return switch (codeGenTypeEnum) {
             case HTML -> {
-                //根据appId和生成类型获取相应的Ai服务实例
                 AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
             }
             case MULTI_FILE -> {
-                //根据appId和生成类型获取相应的Ai服务实例
                 AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
-                // 检测Vue项目场景（创建/修改）
-                //根据appId获取相应的Ai服务实例
                 AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
-                //根据用户需求智能选择Vue项目场景(创建模式/编辑模式)
                 CodeGenTypeEnum vueProjectScenario = aiCodeGenTypeRoutingService.routeVueProjectScenario(userMessage);
                 log.info("Vue项目场景检测结果: {} - {}", vueProjectScenario.getValue(), vueProjectScenario.getText());
 
-                
-                // 使用智能工具选择器获取Vue项目专用AI服务
                 VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, vueProjectScenario, userMessage);
-                
-                // 根据场景调用不同的方法
+
                 TokenStream tokenStream = switch (vueProjectScenario) {
                     case VUE_PROJECT_CREATE -> vueProjectAiService.createVueProjectCodeStream(appId, userMessage);
                     case VUE_PROJECT_EDIT -> vueProjectAiService.editVueProjectCodeStream(appId, userMessage);
                     default -> throw new IllegalStateException("Unexpected value: " + vueProjectScenario);
                 };
-                
-                yield processTokenStream(tokenStream, appId);
+
+                yield processTokenStream(tokenStream, appId, vueProjectScenario);
             }
+            case BACKEND_PROJECT_CREATE, BACKEND_PROJECT_EDIT -> {
+                CodeGenTypeEnum backendScenario = codeGenTypeEnum;
+                log.info("Java后端项目场景执行: {} - {}", backendScenario.getValue(), backendScenario.getText());
+
+                BackendProjectAiService backendAiService = backendProjectAiServiceFactory
+                        .getBackendProjectAiServiceWithSmartTools(appId, backendScenario, userMessage);
+
+                TokenStream tokenStream = switch (backendScenario) {
+                    case BACKEND_PROJECT_CREATE -> backendAiService.createBackendProjectCodeStream(appId, userMessage);
+                    case BACKEND_PROJECT_EDIT -> backendAiService.editBackendProjectCodeStream(appId, userMessage);
+                    default -> throw new IllegalStateException("Unexpected value: " + backendScenario);
+                };
+
+                yield processTokenStream(tokenStream, appId, backendScenario);
+            }
+            // ================= 新增：全栈前端生成分支 =================
+            case FRONTEND_FULLSTACK -> {
+                log.info("前端全栈项目场景执行: {}", codeGenTypeEnum.getText());
+
+                // 获取 Vue 项目 AI 服务（传入 VUE_PROJECT_CREATE 以复用它的 writeFile 写入工具）
+                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory
+                        .getVueProjectAiServiceWithSmartTools(appId, CodeGenTypeEnum.VUE_PROJECT_CREATE, userMessage);
+
+                // 调用专为全栈前端准备的流式生成接口
+                TokenStream tokenStream = vueProjectAiService.createFullStackFrontendStream(appId, userMessage);
+
+                yield processTokenStream(tokenStream, appId, codeGenTypeEnum);
+            }
+            // =======================================================
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMessage);
@@ -126,35 +149,39 @@ public class AiCodeGeneratorFacade {
     }
 
     /**
-     * 处理Token流
+     * 处理Token流 (修复版)
      *
      * @param tokenStream 令牌流
      * @param appId       应用ID
+     * @param codeGenType 场景类型 (用于判断是否需要传统方式构建)
      * @return 处理后的字符串流
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId, CodeGenTypeEnum codeGenType) {
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                         sink.next(JSONUtil.toJsonStr(aiResponseMessage));
                     })
-                    .onPartialToolExecutionRequest((idnex, toolExecutionRequest) -> {
+                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
                         ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
                         sink.next(JSONUtil.toJsonStr(toolRequestMessage));
-
                     })
                     .onToolExecuted((ToolExecution toolExecution) -> {
                         ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse completeResponse) -> {
-                        // 同步构建Vue项目
-                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_create_" + appId;
-                        vueProjectBuilder.buildProject(projectPath);
+                        // 【核心修复】：仅在传统的 Vue 纯前端创建模式下，才在这里同步构建。
+                        // 全栈模式 (FRONTEND_VUE_FULLSTACK) 的构建将交由后续的 ProjectBuilderNode 在工作流中统一处理！
+                        if (codeGenType == CodeGenTypeEnum.VUE_PROJECT_CREATE) {
+                            log.info("触发传统模式下的 Vue 项目同步构建...");
+                            String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_create_" + appId;
+                            vueProjectBuilder.buildProject(projectPath);
+                        }
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
-                        error.printStackTrace();
+                        log.error("大模型流式输出发生异常", error);
                         sink.error(error);
                     })
                     .start();
