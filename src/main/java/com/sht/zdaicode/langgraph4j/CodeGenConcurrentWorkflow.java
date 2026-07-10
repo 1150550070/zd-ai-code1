@@ -37,8 +37,11 @@ public class CodeGenConcurrentWorkflow {
                     // 添加节点
                     .addNode("image_plan", ImagePlanNode.create())
                     .addNode("prompt_enhancer", PromptEnhancerNode.create())
-                    .addNode("router", RouterNode.create())
-                    .addNode("code_generator", CodeGeneratorNode.create())
+//                    .addNode("router", RouterNode.create())
+                    .addNode("databaseDesigner", DatabaseDesignerNode.create())
+                    .addNode("backend_code_generator", BackendCodeGeneratorNode.create())
+                    .addNode("frontend_code_generator", FrontendCodeGeneratorNode.create())
+                    .addNode("project_packaging", ProjectPackagingNode.create())
                     .addNode("code_quality_check", CodeQualityCheckNode.create())
                     .addNode("project_builder", ProjectBuilderNode.create())
 
@@ -66,9 +69,11 @@ public class CodeGenConcurrentWorkflow {
 
                     // 继续串行流程
                     .addEdge("image_aggregator", "prompt_enhancer")
-                    .addEdge("prompt_enhancer", "router")
-                    .addEdge("router", "code_generator")
-                    .addEdge("code_generator", "code_quality_check")
+                    .addEdge("prompt_enhancer", "databaseDesigner")
+                    .addEdge("databaseDesigner", "backend_code_generator")
+                    .addEdge("backend_code_generator", "frontend_code_generator")
+                    .addEdge("frontend_code_generator", "project_packaging")
+                    .addEdge("project_packaging", "code_quality_check")
 
                     // 质检条件边
                     .addConditionalEdges("code_quality_check",
@@ -76,7 +81,7 @@ public class CodeGenConcurrentWorkflow {
                             Map.of(
                                     "build", "project_builder",
                                     "skip_build", END,
-                                    "fail", "code_generator"
+                                    "fail", "backend_code_generator"
                             ))
                     .addEdge("project_builder", END)
                     .compile();
