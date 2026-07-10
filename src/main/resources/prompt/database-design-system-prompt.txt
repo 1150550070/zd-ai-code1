@@ -18,6 +18,7 @@
    - 金额/浮点 -> javaType: BigDecimal, dbType: DECIMAL(10,2)
    - 日期时间 -> javaType: LocalDateTime, dbType: DATETIME
 4. 合理性：根据业务场景，自动补全必需的核心字段，哪怕用户没有明确提到（比如用户表需要密码字段，订单表需要状态字段）。
+5. 精简输出：为防止内容过长导致截断，请务必以最紧凑的(minified) JSON 格式输出，不要包含任何不必要的空格、换行或缩进。
 
 【输出要求】
-你必须严格按照请求要求的 JSON 格式输出，不要包含任何 markdown 标记 (如 ```json) 或其他解释性文字，只输出纯 JSON 数据。
+你必须严格按照请求要求的 JSON 格式输出，不要包含任何 markdown 标记 (如 ```json) 或其他解释性文字，只输出纯紧凑的 JSON 数据。
