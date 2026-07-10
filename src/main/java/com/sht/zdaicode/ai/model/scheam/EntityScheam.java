@@ -1,11 +1,13 @@
 package com.sht.zdaicode.ai.model.scheam;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class EntityScheam implements Serializable {
     // 实体类名 (PascalCase, 如: UserInfo)
     private String className;

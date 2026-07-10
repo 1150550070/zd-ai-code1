@@ -1,10 +1,12 @@
 package com.sht.zdaicode.ai.model.scheam;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.io.Serializable;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class FieldScheam implements Serializable {
     // 实体属性名 (camelCase, 如: userName)
     private String name;
