@@ -207,7 +207,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             // Agent 模式：使用工作流生成代码，直接使用结构化输出处理器
             // 6.1 调用AI生成代码前,保存用户消息到数据库中
             chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-            Flux<String> workflowStream = new CodeGenConcurrentWorkflow().executeWorkflowWithFlux(message, appId);
+            
+            Flux<String> workflowStream;
+            // 判断当前应用的代码生成类型是否属于“全栈模式”
+            if (codeGenTypeEnum.getValue().contains("fullstack")) {
+                workflowStream = new com.sht.zdaicode.langgraph4j.FullStackCodeGenWorkflow().executeWorkflowWithFlux(message, appId);
+            } else {
+                workflowStream = new com.sht.zdaicode.langgraph4j.CodeGenConcurrentWorkflow().executeWorkflowWithFlux(message, appId);
+            }
+            
             return structuredAgentModeStreamHandler.handleStructuredAgentStream(workflowStream, appId, message, loginUser.getId())
                     .doFinally(signalType -> {
                         // 流结束时清理监控上下文（无论成功/失败/取消）
