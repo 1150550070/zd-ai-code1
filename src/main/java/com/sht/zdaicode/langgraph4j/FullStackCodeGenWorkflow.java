@@ -69,8 +69,7 @@ public class FullStackCodeGenWorkflow {
                                     "fail", END
                             ))
 
-                    // API 契约生成后，扇出 (Fan-out) 到前后端并发生成
-                    .addEdge("api_contract_generator", "image_plan")
+                    // API 契约生成后，进入后端生成分支 (串行化，规避并发限制)
                     .addEdge("api_contract_generator", "backend_generator")
 
                     // 前端分支：先进行并发图片收集，再生成代码
@@ -101,9 +100,9 @@ public class FullStackCodeGenWorkflow {
                     .addConditionalEdges("backend_quality_check",
                             edge_async(this::routeBackendQualityCheck),
                             Map.of(
-                                    "pass", "fullstack_convergence",
+                                    "pass", "image_plan", // 后端生成质检通过后，进入前端链路
                                     "retry", "backend_generator",
-                                    "fail", "fullstack_convergence"
+                                    "fail", "image_plan" // 即使后端失败，也继续前端链路
                             ))
 
                     // 汇聚节点后进入项目构建
@@ -180,7 +179,6 @@ public class FullStackCodeGenWorkflow {
                             .build();
                             
                     RunnableConfig runnableConfig = RunnableConfig.builder()
-                            .addParallelNodeExecutor("api_contract_generator", pool) // 在扇出点设置并发执行器 (拆分前后端)
                             .addParallelNodeExecutor("image_plan", pool) // 在前端分支的扇出点设置并发执行器 (拆分四种图片收集)
                             .build();
 
