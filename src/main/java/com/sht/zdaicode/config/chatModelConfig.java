@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import java.time.Duration;
 
 @Configuration
 @ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
@@ -29,6 +30,8 @@ public class chatModelConfig {
 
     private boolean logResponses;
 
+    private Integer timeout;
+
     @Bean
     @Scope("prototype")
     public ChatModel chatModelPrototype() {
@@ -40,6 +43,7 @@ public class chatModelConfig {
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
+                .timeout(timeout != null ? Duration.ofSeconds(timeout) : Duration.ofSeconds(120))
                 .build();
     }
 }
