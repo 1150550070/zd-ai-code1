@@ -32,4 +32,15 @@ public interface VueProjectAiService {
      */
     @SystemMessage(fromResource = "prompt/codegen-vue-project-edit-system-prompt.txt")
     TokenStream editVueProjectCodeStream(@MemoryId long appId, @UserMessage String userMessage);
+
+    /**
+     * 创建 全栈 Vue 项目代码（流式）
+     * 使用全栈模式的提示词，能识别 API Schema
+     *
+     * @param appId 应用ID
+     * @param userMessage 用户消息
+     * @return 生成过程的流式响应
+     */
+    @SystemMessage(fromResource = "prompt/codegen-frontend-vue-fullstack-system-prompt.txt")
+    TokenStream createFullStackVueProjectCodeStream(@MemoryId long appId, @UserMessage String userMessage);
 }

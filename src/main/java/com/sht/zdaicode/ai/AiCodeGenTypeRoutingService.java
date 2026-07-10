@@ -28,5 +28,14 @@ public interface AiCodeGenTypeRoutingService {
      */
     @SystemMessage(fromResource = "prompt/codegen-vue-project-scenario-routing-system-prompt.txt")
     CodeGenTypeEnum routeVueProjectScenario(String userPrompt);
+
+    /**
+     * 根据全栈环境的需求智能选择前端代码生成类型
+     *
+     * @param userPrompt 全栈需求与 Schema 描述
+     * @return 推荐的全栈前端生成类型
+     */
+    @SystemMessage(fromResource = "prompt/codegen-fullstack-routing-system-prompt.txt")
+    CodeGenTypeEnum routeFullStackCodeGenType(String userPrompt);
 }
 

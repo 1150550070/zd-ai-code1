@@ -12,7 +12,11 @@ public enum CodeGenTypeEnum {
     HTML("原生 HTML 模式", "html"),
     MULTI_FILE("原生多文件模式", "multi_file"),
     VUE_PROJECT_CREATE("Vue 工程创建模式", "vue_project_create"),
-    VUE_PROJECT_EDIT("Vue 工程编辑模式", "vue_project_edit");
+    VUE_PROJECT_EDIT("Vue 工程编辑模式", "vue_project_edit"),
+    FRONTEND_FULLSTACK_HTML("全栈原生 HTML 模式", "frontend_fullstack_html"),
+    FRONTEND_FULLSTACK_MULTI_FILE("全栈多文件模式", "frontend_fullstack_multi_file"),
+    FRONTEND_FULLSTACK_VUE("全栈 Vue 模式", "frontend_fullstack_vue"),
+    BACKEND_JAVA("Java 后端代码", "backend_java");
 
 
     private final String text;

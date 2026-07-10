@@ -52,6 +52,24 @@ public interface AiCodeGeneratorService {
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     Flux<String> generateMultiFileCodeStream(String userMessage);
 
+    /**
+     * 生成全栈 HTML 代码（带真实API请求）
+     */
+    @SystemMessage(fromResource = "prompt/codegen-frontend-html-fullstack-system-prompt.txt")
+    Flux<String> generateFullStackHtmlCodeStream(String userMessage);
+
+    /**
+     * 生成全栈 多文件代码（带真实API请求）
+     */
+    @SystemMessage(fromResource = "prompt/codegen-frontend-multi-file-fullstack-system-prompt.txt")
+    Flux<String> generateFullStackMultiFileCodeStream(String userMessage);
+
+    /**
+     * 生成 Java 后端代码
+     */
+    @SystemMessage(fromResource = "prompt/codegen-backend-java-create-system-prompt.txt")
+    Flux<String> generateBackendJavaCodeStream(String userMessage);
+
 
     // Vue 项目生成方法已迁移到 VueProjectAiService
 

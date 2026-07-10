@@ -141,7 +141,7 @@ public class VueProjectAiServiceFactory {
      */
     private List<Object> getToolsByScenario(CodeGenTypeEnum scenario) {
         return switch (scenario) {
-            case VUE_PROJECT_CREATE -> {
+            case VUE_PROJECT_CREATE, FRONTEND_FULLSTACK_VUE -> {
                 // 创建模式：基础文件写入工具
                 log.debug("创建模式工具集（传统）：文件写入工具");
                 yield List.of(

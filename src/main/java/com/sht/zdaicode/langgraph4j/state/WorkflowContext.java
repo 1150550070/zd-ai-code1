@@ -58,9 +58,19 @@ public class WorkflowContext implements Serializable {
     private String enhancedPrompt;
 
     /**
-     * 代码生成类型
+     * 代码生成类型 (单一工程模式下使用)
      */
     private CodeGenTypeEnum generationType;
+
+    /**
+     * 前端代码生成类型 (全栈模式下使用)
+     */
+    private CodeGenTypeEnum frontendGenerationType;
+
+    /**
+     * 后端代码生成类型 (全栈模式下使用)
+     */
+    private CodeGenTypeEnum backendGenerationType;
 
     /**
      * 生成的代码目录
@@ -99,6 +109,7 @@ public class WorkflowContext implements Serializable {
 
 
 
+
     /**
      * 并发图片收集的中间结果字段
      */
@@ -107,7 +118,73 @@ public class WorkflowContext implements Serializable {
     private List<ImageResource> diagrams;
     private List<ImageResource> logos;
 
+    // ========== 全栈工作流新增字段 ==========
+    
+    /**
+     * 需求分析结果
+     */
+    private String analyzedRequirements;
+    
+    /**
+     * 数据库 Schema 对象
+     */
+    private com.sht.zdaicode.ai.model.scheam.ProjectScheam projectSchema;
+    
+    /**
+     * 数据库初始化 SQL 语句
+     */
+    private String databaseInitSql;
+    
+    /**
+     * API 契约内容
+     */
+    private com.sht.zdaicode.ai.model.ApiContract apiContract;
+    
+    /**
+     * 数据库设计质检结果
+     */
+    private QualityResult dbQualityResult;
 
+    /**
+     * 前端代码质检结果
+     */
+    private QualityResult frontendQualityResult;
+
+    /**
+     * 后端代码质检结果
+     */
+    private QualityResult backendQualityResult;
+    
+    /**
+     * 独立的前端代码生成目录
+     */
+    private String frontendGeneratedCodeDir;
+    
+    /**
+     * 独立的后端代码生成目录
+     */
+    private String backendGeneratedCodeDir;
+
+
+    private String unifiedProjectDir;
+
+
+    
+    // 重试控制字段
+    @Builder.Default
+    private int dbDesignRetryCount = 0;
+    
+    @Builder.Default
+    private int frontendRetryCount = 0;
+    
+    @Builder.Default
+    private int backendRetryCount = 0;
+    
+    @Builder.Default
+    private boolean frontendDone = false;
+    
+    @Builder.Default
+    private boolean backendDone = false;
 
     @Serial
     private static final long serialVersionUID = 1L;

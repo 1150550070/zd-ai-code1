@@ -97,6 +97,21 @@ public class AiCodeGeneratorFacade {
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
+            case FRONTEND_FULLSTACK_HTML -> {
+                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
+                Flux<String> codeStream = aiCodeGeneratorService.generateFullStackHtmlCodeStream(userMessage);
+                yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
+            }
+            case FRONTEND_FULLSTACK_MULTI_FILE -> {
+                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
+                Flux<String> codeStream = aiCodeGeneratorService.generateFullStackMultiFileCodeStream(userMessage);
+                yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+            }
+            case BACKEND_JAVA -> {
+                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
+                Flux<String> codeStream = aiCodeGeneratorService.generateBackendJavaCodeStream(userMessage);
+                yield processCodeStream(codeStream, CodeGenTypeEnum.BACKEND_JAVA, appId);
+            }
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
                 // 检测Vue项目场景（创建/修改）
                 //根据appId获取相应的Ai服务实例
@@ -105,7 +120,6 @@ public class AiCodeGeneratorFacade {
                 CodeGenTypeEnum vueProjectScenario = aiCodeGenTypeRoutingService.routeVueProjectScenario(userMessage);
                 log.info("Vue项目场景检测结果: {} - {}", vueProjectScenario.getValue(), vueProjectScenario.getText());
 
-                
                 // 使用智能工具选择器获取Vue项目专用AI服务
                 VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, vueProjectScenario, userMessage);
                 
@@ -116,6 +130,13 @@ public class AiCodeGeneratorFacade {
                     default -> throw new IllegalStateException("Unexpected value: " + vueProjectScenario);
                 };
                 
+                yield processTokenStream(tokenStream, appId);
+            }
+            case FRONTEND_FULLSTACK_VUE -> {
+                // 对于全栈 Vue，不再进行场景检测，直接使用创建全栈 Vue 项目的专用服务与提示词
+                log.info("执行全栈 Vue 模式生成，跳过场景检测");
+                VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, codeGenTypeEnum, userMessage);
+                TokenStream tokenStream = vueProjectAiService.createFullStackVueProjectCodeStream(appId, userMessage);
                 yield processTokenStream(tokenStream, appId);
             }
             default -> {

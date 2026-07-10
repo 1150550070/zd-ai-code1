@@ -12,4 +12,16 @@ public interface CodeQualityCheckService {
      */
     @SystemMessage(fromResource = "prompt/code-quality-check-system-prompt.txt")
     QualityResult checkCodeQuality(@UserMessage String codeContent);
+
+    /**
+     * 检查全栈前端代码质量（需要验证 API 契约和数据绑定）
+     */
+    @SystemMessage(fromResource = "prompt/codegen-frontend-quality-check-fullstack-system-prompt.txt")
+    QualityResult checkFullstackFrontendCodeQuality(@UserMessage String codeContent);
+
+    /**
+     * 检查后端 Java 代码质量（验证 Schema 和分层结构）
+     */
+    @SystemMessage(fromResource = "prompt/codegen-backend-quality-check-system-prompt.txt")
+    QualityResult checkBackendJavaCodeQuality(@UserMessage String codeContent);
 }

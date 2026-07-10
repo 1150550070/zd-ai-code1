@@ -96,8 +96,8 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "Vue项目生成已迁移到VueProjectAiServiceFactory，请使用专用服务");
 
-            // HTML 和多文件生成使用默认模型
-            case HTML, MULTI_FILE -> {
+            // HTML、多文件生成和后端 Java 生成使用默认模型
+            case HTML, MULTI_FILE, FRONTEND_FULLSTACK_HTML, FRONTEND_FULLSTACK_MULTI_FILE, BACKEND_JAVA -> {
                 StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
