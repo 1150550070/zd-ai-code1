@@ -82,6 +82,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Value("${code.deploy-host:http://localhost}")
     private String deployHost;
 
+    @Value("${spring.profiles.active:local}")
+    private String activeProfile;
+
     /**
      * 获取应用 vo
      *
@@ -243,7 +246,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      *
      * @param appId     应用 ID
      * @param loginUser 登录用户
-     * @return deployKey
+     * @return appDeployUrl
      */
     @Override
     public String deployApp(Long appId, User loginUser) {
@@ -263,48 +266,119 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (StrUtil.isBlank(deployKey)) {
             deployKey = RandomUtil.randomString(6);
         }
-        // 5. 获取代码生成类型，构建源目录路径
-        String codeGenType = app.getCodeGenType();
-        String sourceDirName = codeGenType + "_" + appId;
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
-        // 6. 检查源目录是否存在
-        File sourceDir = new File(sourceDirPath);
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
-        }
-        //Vue 项目特殊处理,执行构建
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE || codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
-            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
-            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
-            //检查dist目录是否存在
-            File distDir = new File(sourceDirPath ,"dist");
-            ThrowUtils.throwIf(!distDir.exists() , ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
-            //构建完成后,将dist目录下的文件复制到部署目录
-            sourceDir = distDir;
+
+        // 5. 根据不同环境走不同的部署逻辑
+        String appDeployUrl;
+        if ("prod".equalsIgnoreCase(activeProfile)) {
+            appDeployUrl = deployToProd(appId, app, deployKey);
+        } else {
+            appDeployUrl = deployToLocal(appId, app, deployKey);
         }
 
-        // 7. 复制文件到部署目录
-        String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
-        try {
-            FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败：" + e.getMessage());
-        }
-        // 8. 更新应用的 deployKey 和部署时间
+        // 6. 更新应用的 deployKey 和部署时间
         App updateApp = new App();
         updateApp.setId(appId);
         updateApp.setDeployKey(deployKey);
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 9. 构建应用访问 URL
-        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
 
-        // 10. 异步生成应用截图并更新封面
+        // 7. 异步生成应用截图并更新封面
         generateAppScreenshotAsync(appId, appDeployUrl);
-        // 11. 返回可访问的 URL
+        // 8. 返回可访问的 URL
         return appDeployUrl;
+    }
+
+    private String deployToProd(Long appId, App app, String deployKey) {
+        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生产环境部署逻辑暂未实现，请先在本地环境测试！");
+    }
+
+    private String deployToLocal(Long appId, App app, String deployKey) {
+        String codeGenType = app.getCodeGenType();
+        boolean isFullStack = codeGenType != null && codeGenType.contains("fullstack");
+
+        String sourceDirName = isFullStack ? "fullstack_app_" + appId : codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        
+        File sourceDir = new File(sourceDirPath);
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
+        }
+
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        
+        // 前端/静态资源目录准备
+        File deploySourceDir = sourceDir;
+        if (isFullStack) {
+            // 全栈项目的静态资源在 frontend/dist
+            File frontendDist = new File(sourceDirPath, "frontend" + File.separator + "dist");
+            if (!frontendDist.exists()) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "前端构建产物不存在，请先确保全栈构建成功");
+            }
+            deploySourceDir = frontendDist;
+            
+            // 全栈项目还需要在本地拉起后端
+            startLocalJavaBackend(sourceDirPath, appId);
+            
+        } else if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE || codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
+            // 纯前端 Vue 项目：按需构建，避免重复打包
+            File distDir = new File(sourceDirPath ,"dist");
+            if (!distDir.exists()) {
+                boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+                ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
+            }
+            ThrowUtils.throwIf(!distDir.exists() , ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，未找到 dist 目录");
+            deploySourceDir = distDir;
+        }
+
+        // 复制静态文件到部署目录 (Nginx 发布目录)
+        String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+        try {
+            FileUtil.copyContent(deploySourceDir, new File(deployDirPath), true);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署静态资源失败：" + e.getMessage());
+        }
+
+        return String.format("%s/%s/", deployHost, deployKey);
+    }
+
+    private void startLocalJavaBackend(String sourceDirPath, Long appId) {
+        try {
+            File backendTargetDir = new File(sourceDirPath, "backend" + File.separator + "target");
+            if (!backendTargetDir.exists()) {
+                log.warn("后端 target 目录不存在，跳过启动 Java 后端");
+                return;
+            }
+            
+            // 找到对应的 jar 包
+            File[] jarFiles = backendTargetDir.listFiles((dir, name) -> name.endsWith(".jar") && !name.endsWith("-sources.jar"));
+            if (jarFiles == null || jarFiles.length == 0) {
+                log.warn("未找到可运行的 jar 包，跳过启动 Java 后端");
+                return;
+            }
+            File jarFile = jarFiles[0];
+
+            log.info("尝试本地启动 Java 后端应用: {}", jarFile.getAbsolutePath());
+            
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "java",
+                    "-jar",
+                    jarFile.getAbsolutePath()
+            );
+            
+            // 运行日志输出到 backend/run.log
+            File logFile = new File(sourceDirPath, "backend" + File.separator + "run.log");
+            processBuilder.redirectOutput(logFile);
+            processBuilder.redirectError(logFile);
+            
+            // 异步拉起进程
+            Process process = processBuilder.start();
+            log.info("Java 后端应用已在后台启动，PID: {}", process.pid());
+            
+        } catch (Exception e) {
+            log.error("启动 Java 后端失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "本地启动 Java 后端失败: " + e.getMessage());
+        }
     }
 
     /**
