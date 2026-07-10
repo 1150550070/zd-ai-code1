@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -14,7 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ApiContract {
+public class ApiContract implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /**
      * API 基础路径，例如: /api/v1
@@ -31,7 +33,8 @@ public class ApiContract {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ApiEndpoint {
+    public static class ApiEndpoint implements Serializable {
+        private static final long serialVersionUID = 1L;
         /**
          * 接口描述，例如：获取用户列表
          */
@@ -63,7 +66,8 @@ public class ApiContract {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ApiParameter {
+    public static class ApiParameter implements Serializable {
+        private static final long serialVersionUID = 1L;
         /**
          * 字段名称
          */
