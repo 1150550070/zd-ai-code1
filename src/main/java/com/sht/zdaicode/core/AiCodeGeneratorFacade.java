@@ -43,6 +43,8 @@ public class AiCodeGeneratorFacade {
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+    @Resource
+    private BackendProjectAiServiceFactory backendProjectAiServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -108,8 +110,8 @@ public class AiCodeGeneratorFacade {
                 yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             }
             case BACKEND_JAVA -> {
-                AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
-                TokenStream tokenStream = aiCodeGeneratorService.generateBackendJavaCodeStream(userMessage);
+                BackendProjectAiService backendProjectAiService = backendProjectAiServiceFactory.getBackendProjectAiServiceWithSmartTools(appId, codeGenTypeEnum, userMessage);
+                TokenStream tokenStream = backendProjectAiService.createBackendProjectCodeStream(appId, userMessage);
                 yield processTokenStream(tokenStream, appId);
             }
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {

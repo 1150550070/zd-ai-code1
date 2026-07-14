@@ -45,11 +45,12 @@ public class ProgressAwareFileWriteTool extends BaseTool {
             String relativeFilePath,
             @P("要写入文件的内容")
             String content,
-            @ToolMemoryId Long appId
+            @ToolMemoryId Object appIdObj
     ) {
         String operationId = UUID.randomUUID().toString();
         
         try {
+            Long appId = Long.valueOf(appIdObj.toString());
             // 发送开始信号
             progressNotifier.notifyStart(operationId, "开始写入文件: " + relativeFilePath);
             

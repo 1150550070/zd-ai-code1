@@ -109,8 +109,8 @@ public class BackendProjectAiServiceFactory {
             log.info("为应用 {} 创建 {} 模式的Backend项目AI服务（传统选择），工具数量: {}", appId, scenario.getText(), tools.size());
         }
 
-        // 假设你在 CodeGenTypeEnum 中定义了 BACKEND_PROJECT_EDIT
-        StreamingChatModel selectedModel = scenario == CodeGenTypeEnum.valueOf("BACKEND_PROJECT_EDIT")
+        // 暂无 Edit 模式，默认全走 BACKEND_JAVA（推理模型）
+        StreamingChatModel selectedModel = scenario == CodeGenTypeEnum.valueOf("BACKEND_JAVA")
                 ? SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class)
                 : SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
 
@@ -126,8 +126,7 @@ public class BackendProjectAiServiceFactory {
      * 根据场景获取对应的工具集（传统模式）
      */
     private List<Object> getToolsByScenario(CodeGenTypeEnum scenario) {
-        // 假设你添加了这两个枚举值：BACKEND_PROJECT_CREATE 和 BACKEND_PROJECT_EDIT
-        if (scenario.name().equals("BACKEND_PROJECT_CREATE")) {
+        if (scenario.name().equals("BACKEND_JAVA")) {
             log.debug("后端创建模式工具集（传统）：文件写入工具");
             return List.of(toolManager.getTool("writeFile"));
         } else if (scenario.name().equals("BACKEND_PROJECT_EDIT")) {

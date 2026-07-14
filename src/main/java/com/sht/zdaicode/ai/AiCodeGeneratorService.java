@@ -64,11 +64,7 @@ public interface AiCodeGeneratorService {
     @SystemMessage(fromResource = "prompt/codegen-frontend-multi-file-fullstack-system-prompt.txt")
     Flux<String> generateFullStackMultiFileCodeStream(String userMessage);
 
-    /**
-     * 生成 Java 后端代码
-     */
-    @SystemMessage(fromResource = "prompt/codegen-backend-java-create-system-prompt.txt")
-    TokenStream generateBackendJavaCodeStream(String userMessage);
+    // Java 后端代码生成方法已迁移到 BackendProjectAiService
 
 
     // Vue 项目生成方法已迁移到 VueProjectAiService

@@ -29,9 +29,10 @@ public class FileWriteTool extends BaseTool {
             String relativeFilePath,
             @P("要写入文件的内容")
             String content,
-            @ToolMemoryId Long appId
+            @ToolMemoryId Object appIdObj
     ) {
         try {
+            Long appId = Long.valueOf(appIdObj.toString());
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
                 // 相对路径处理，创建基于 appId 的项目目录

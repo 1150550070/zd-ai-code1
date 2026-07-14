@@ -37,8 +37,6 @@ public class AiCodeGeneratorServiceFactory {
     private RedisChatMemoryStore redisChatMemoryStore;
     @Resource
     private ChatHistoryService chatHistoryService;
-    @Resource
-    private ToolManager toolManager;
 
 
     /**
@@ -94,9 +92,9 @@ public class AiCodeGeneratorServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
         // 根据代码生成类型选择不同的模型配置
         return switch (codeGenType) {
-            // Vue 项目不在此处理，已迁移到 VueProjectAiServiceFactory
-            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
-                    "Vue项目生成已迁移到VueProjectAiServiceFactory，请使用专用服务");
+            // Vue 项目和 Backend 项目不在此处理，已迁移到专用服务工厂
+            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT, BACKEND_JAVA -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
+                    "项目生成已迁移到专用工厂，请使用专用服务");
 
             // HTML、多文件生成使用默认模型（无工具）
             case HTML, MULTI_FILE, FRONTEND_FULLSTACK_HTML, FRONTEND_FULLSTACK_MULTI_FILE -> {
@@ -105,18 +103,6 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
-                        .inputGuardrails(new PromptSafetyInputGuardrail())
-                        .build();
-            }
-
-            // Java 后端全栈生成，需要注入工具
-            case BACKEND_JAVA -> {
-                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
-                yield AiServices.builder(AiCodeGeneratorService.class)
-                        .chatModel(chatModel)
-                        .streamingChatModel(openAiStreamingChatModel)
-                        .chatMemory(chatMemory)
-                        .tools(toolManager.getTool("writeFile"))
                         .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
