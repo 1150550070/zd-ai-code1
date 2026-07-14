@@ -60,7 +60,7 @@ public class VueProjectAiServiceFactory {
     /**
      * 根据应用ID和场景获取Vue项目AI服务
      *
-     * @param appId 应用ID
+     * @param appId    应用ID
      * @param scenario 场景（创建/修改）
      * @return Vue项目AI服务实例
      */
@@ -72,12 +72,13 @@ public class VueProjectAiServiceFactory {
     /**
      * 根据应用ID、场景和用户消息获取Vue项目AI服务（智能工具选择）
      *
-     * @param appId 应用ID
-     * @param scenario 场景（创建/修改）
+     * @param appId       应用ID
+     * @param scenario    场景（创建/修改）
      * @param userMessage 用户消息（用于智能工具选择）
      * @return Vue项目AI服务实例
      */
-    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario, String userMessage) {
+    public VueProjectAiService getVueProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario,
+            String userMessage) {
         // 对于智能工具选择，不使用缓存，每次都重新创建以确保工具集的准确性
         return createVueProjectAiService(appId, scenario, userMessage);
     }
@@ -92,8 +93,8 @@ public class VueProjectAiServiceFactory {
     /**
      * 创建Vue项目AI服务实例
      *
-     * @param appId 应用ID
-     * @param scenario 场景
+     * @param appId       应用ID
+     * @param scenario    场景
      * @param userMessage 用户消息（可选，用于智能工具选择）
      * @return Vue项目AI服务实例
      */
@@ -128,8 +129,8 @@ public class VueProjectAiServiceFactory {
                 .streamingChatModel(selectedModel)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(tools)
-//                .inputGuardrails(new PromptSafetyInputGuardrail())
-//                .outputGuardrails(new RetryOutputGuardrail())
+                // .inputGuardrails(new PromptSafetyInputGuardrail())
+                // .outputGuardrails(new RetryOutputGuardrail())
                 .build();
     }
 
@@ -145,16 +146,14 @@ public class VueProjectAiServiceFactory {
                 // 创建模式：基础文件写入工具
                 log.debug("创建模式工具集（传统）：文件写入工具");
                 yield List.of(
-                        toolManager.getTool("writeFile")
-                );
+                        toolManager.getTool("writeFile"));
             }
             case VUE_PROJECT_EDIT -> {
                 // 修改模式：基础读取和修改工具
                 log.debug("修改模式工具集（传统）：文件读取、修改工具");
                 yield List.of(
                         toolManager.getTool("readFile"),
-                        toolManager.getTool("modifyFile")
-                );
+                        toolManager.getTool("modifyFile"));
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "不支持的Vue项目场景: " + scenario.getValue());
@@ -162,16 +161,54 @@ public class VueProjectAiServiceFactory {
     }
 
     /**
+     * 创建用于分批前端生成的轻量级 AI 服务实例
+     * <p>
+     * 与标准 {@link #getVueProjectAiService} 的区别：
+     * <ul>
+     *   <li>使用内存 ChatMemory，不使用 Redis 持久化 (避免不同 chunk 间的上下文污染)</li>
+     *   <li>不加载历史对话 (全栈模式下不需要历史记录)</li>
+     *   <li>更小的消息窗口 (每个 chunk 只处理一轮对话)</li>
+     * </ul>
+     * 每次调用都返回全新实例，确保各 chunk 之间完全隔离。
+     * </p>
+     *
+     * @param appId 应用 ID (用于 writeFile 工具定位输出目录)
+     * @return 全新的、无状态的 VueProjectAiService 实例
+     */
+    public VueProjectAiService createChunkedVueProjectAiService(long appId) {
+        // 使用内存 ChatMemory，不走 Redis，不加载历史
+        MessageWindowChatMemory chatMemory = MessageWindowChatMemory
+                .builder()
+                .id(appId)
+                .maxMessages(6) // 每个 chunk 只需一轮对话 (system + user + assistant)
+                .build();
+
+        // 全栈 Vue 分批模式只需要 writeFile 工具
+        List<Object> tools = List.of(toolManager.getTool("writeFile"));
+
+        StreamingChatModel selectedModel = SpringContextUtil.getBean(
+                "reasoningStreamingChatModelPrototype", StreamingChatModel.class);
+
+        log.debug("为应用 {} 创建分批生成专用 VueProjectAiService (无状态, 内存Memory)", appId);
+
+        return AiServices.builder(VueProjectAiService.class)
+                .streamingChatModel(selectedModel)
+                .chatMemoryProvider(memoryId -> chatMemory)
+                .tools(tools)
+                .build();
+    }
+
+    /**
      * 获取指定场景的工具列表（用于测试和调试）
      *
      * @param scenario 场景
-     * @param appId 应用ID（用于日志）
+     * @param appId    应用ID（用于日志）
      * @return 工具列表
      */
     public List<Object> getToolsForScenario(CodeGenTypeEnum scenario, Long appId) {
         List<Object> tools = getToolsByScenario(scenario);
-        log.info("应用 {} 的 {} 场景工具列表: {}", appId, scenario.getText(), 
-            tools.stream().map(tool -> tool.getClass().getSimpleName()).toList());
+        log.info("应用 {} 的 {} 场景工具列表: {}", appId, scenario.getText(),
+                tools.stream().map(tool -> tool.getClass().getSimpleName()).toList());
         return tools;
     }
 

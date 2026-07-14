@@ -45,10 +45,12 @@ public class FrontendQualityCheckNode {
                     }
                     CodeQualityCheckService qualityCheckService = SpringContextUtil.getBean(CodeQualityCheckService.class);
                     
-                    // 将 Schema 加入到质检内容中
+                    // 将精炼后的 Schema 加入到质检内容中 (剥离后端专属字段，减少质检上下文噪声)
                     String schemaJson = "";
                     if (context.getProjectSchema() != null) {
-                        schemaJson = "\n\n【后端 API 契约与表结构 (Schema)】\n" + cn.hutool.json.JSONUtil.toJsonStr(context.getProjectSchema());
+                        schemaJson = "\n\n【前端数据模型 (精炼后)】\n"
+                                + cn.hutool.json.JSONUtil.toJsonStr(
+                                    com.sht.zdaicode.ai.model.scheam.SchemaSlimmer.slim(context.getProjectSchema()));
                     }
                     
                     qualityResult = qualityCheckService.checkFullstackFrontendCodeQuality("请检查以下前端代码质量:\n" + codeContent + schemaJson);

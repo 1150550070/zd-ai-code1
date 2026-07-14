@@ -38,7 +38,6 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
-
     /**
      * AI 服务实例缓存
      */
@@ -93,12 +92,14 @@ public class AiCodeGeneratorServiceFactory {
         // 根据代码生成类型选择不同的模型配置
         return switch (codeGenType) {
             // Vue 项目和 Backend 项目不在此处理，已迁移到专用服务工厂
-            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT, BACKEND_JAVA -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
-                    "项目生成已迁移到专用工厂，请使用专用服务");
+            case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT, BACKEND_JAVA ->
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR,
+                        "项目生成已迁移到专用工厂，请使用专用服务");
 
             // HTML、多文件生成使用默认模型（无工具）
             case HTML, MULTI_FILE, FRONTEND_FULLSTACK_HTML, FRONTEND_FULLSTACK_MULTI_FILE -> {
-                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
+                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype",
+                        StreamingChatModel.class);
                 yield AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
@@ -110,7 +111,6 @@ public class AiCodeGeneratorServiceFactory {
                     "不支持的代码生成类型: " + codeGenType.getValue());
         };
     }
-
 
     /**
      * 创建AI代码生成服务

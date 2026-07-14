@@ -72,7 +72,8 @@ public class BackendProjectAiServiceFactory {
     /**
      * 根据应用ID、场景和用户消息获取后端项目AI服务（智能工具选择）
      */
-    public BackendProjectAiService getBackendProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario, String userMessage) {
+    public BackendProjectAiService getBackendProjectAiServiceWithSmartTools(long appId, CodeGenTypeEnum scenario,
+            String userMessage) {
         // 对于智能工具选择，不使用缓存，每次都重新创建以确保工具集的准确性
         return createBackendProjectAiService(appId, scenario, userMessage);
     }
@@ -87,7 +88,8 @@ public class BackendProjectAiServiceFactory {
     /**
      * 创建后端项目AI服务实例
      */
-    private BackendProjectAiService createBackendProjectAiService(long appId, CodeGenTypeEnum scenario, String userMessage) {
+    private BackendProjectAiService createBackendProjectAiService(long appId, CodeGenTypeEnum scenario,
+            String userMessage) {
         // 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
@@ -118,7 +120,7 @@ public class BackendProjectAiServiceFactory {
                 .streamingChatModel(selectedModel)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(tools)
-//                .inputGuardrails(new PromptSafetyInputGuardrail())
+                // .inputGuardrails(new PromptSafetyInputGuardrail())
                 .build();
     }
 
@@ -133,8 +135,7 @@ public class BackendProjectAiServiceFactory {
             log.debug("后端修改模式工具集（传统）：文件读取、修改工具");
             return List.of(
                     toolManager.getTool("readFile"),
-                    toolManager.getTool("modifyFile")
-            );
+                    toolManager.getTool("modifyFile"));
         } else {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的Backend项目场景: " + scenario.getValue());
         }
