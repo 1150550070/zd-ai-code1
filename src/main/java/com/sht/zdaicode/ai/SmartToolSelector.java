@@ -72,7 +72,7 @@ public class SmartToolSelector {
         log.debug("用户操作意图分析结果: {}", intent);
 
         return switch (scenario) {
-            case VUE_PROJECT_CREATE, FRONTEND_FULLSTACK_VUE -> getCreateModeTools(intent);
+            case VUE_PROJECT_CREATE, FRONTEND_FULLSTACK_VUE, BACKEND_JAVA -> getCreateModeTools(intent);
             case VUE_PROJECT_EDIT -> getEditModeTools(intent, appId);
             default -> throw new IllegalStateException("Unexpected value: " + scenario);
         };
