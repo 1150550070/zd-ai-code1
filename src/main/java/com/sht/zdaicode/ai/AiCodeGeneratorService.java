@@ -68,7 +68,7 @@ public interface AiCodeGeneratorService {
      * 生成 Java 后端代码
      */
     @SystemMessage(fromResource = "prompt/codegen-backend-java-create-system-prompt.txt")
-    Flux<String> generateBackendJavaCodeStream(String userMessage);
+    TokenStream generateBackendJavaCodeStream(String userMessage);
 
 
     // Vue 项目生成方法已迁移到 VueProjectAiService

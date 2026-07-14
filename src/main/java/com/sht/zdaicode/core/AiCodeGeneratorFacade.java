@@ -109,8 +109,8 @@ public class AiCodeGeneratorFacade {
             }
             case BACKEND_JAVA -> {
                 AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
-                Flux<String> codeStream = aiCodeGeneratorService.generateBackendJavaCodeStream(userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.BACKEND_JAVA, appId);
+                TokenStream tokenStream = aiCodeGeneratorService.generateBackendJavaCodeStream(userMessage);
+                yield processTokenStream(tokenStream, appId);
             }
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
                 // 检测Vue项目场景（创建/修改）
