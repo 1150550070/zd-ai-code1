@@ -112,7 +112,7 @@ public class AiCodeGeneratorFacade {
             case BACKEND_JAVA -> {
                 BackendProjectAiService backendProjectAiService = backendProjectAiServiceFactory.getBackendProjectAiServiceWithSmartTools(appId, codeGenTypeEnum, userMessage);
                 TokenStream tokenStream = backendProjectAiService.createBackendProjectCodeStream(appId, userMessage);
-                yield processTokenStream(tokenStream, appId);
+                yield processTokenStream(tokenStream, appId, codeGenTypeEnum);
             }
             case VUE_PROJECT_CREATE, VUE_PROJECT_EDIT -> {
                 // 检测Vue项目场景（创建/修改）
@@ -132,14 +132,14 @@ public class AiCodeGeneratorFacade {
                     default -> throw new IllegalStateException("Unexpected value: " + vueProjectScenario);
                 };
                 
-                yield processTokenStream(tokenStream, appId);
+                yield processTokenStream(tokenStream, appId, vueProjectScenario);
             }
             case FRONTEND_FULLSTACK_VUE -> {
                 // 对于全栈 Vue，不再进行场景检测，直接使用创建全栈 Vue 项目的专用服务与提示词
                 log.info("执行全栈 Vue 模式生成，跳过场景检测");
                 VueProjectAiService vueProjectAiService = vueProjectAiServiceFactory.getVueProjectAiServiceWithSmartTools(appId, codeGenTypeEnum, userMessage);
                 TokenStream tokenStream = vueProjectAiService.createFullStackVueProjectCodeStream(appId, userMessage);
-                yield processTokenStream(tokenStream, appId);
+                yield processTokenStream(tokenStream, appId, codeGenTypeEnum);
             }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
@@ -148,36 +148,27 @@ public class AiCodeGeneratorFacade {
         };
     }
 
-    /**
-     * 处理Token流
-     *
-     * @param tokenStream 令牌流
-     * @param appId       应用ID
-     * @return 处理后的字符串流
-     */
-    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId, CodeGenTypeEnum codeGenTypeEnum) {
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
-                        AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
-                        sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                        sink.next(partialResponse);
                     })
-                    .onPartialToolExecutionRequest((idnex, toolExecutionRequest) -> {
-                        ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
-                        sink.next(JSONUtil.toJsonStr(toolRequestMessage));
-
+                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
+                        sink.next(String.format("\n> 🛠️ **正在执行操作**: `%s`\n", toolExecutionRequest.name()));
                     })
                     .onToolExecuted((ToolExecution toolExecution) -> {
-                        ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
-                        sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
+                        sink.next("\n> ✅ 操作执行完毕\n\n");
                     })
                     .onCompleteResponse((ChatResponse completeResponse) -> {
-                        // 同步构建Vue项目
-                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_create_" + appId;
-                        vueProjectBuilder.buildProject(projectPath);
+                        // 仅对纯前端模式（VUE_PROJECT_CREATE, VUE_PROJECT_EDIT）进行同步构建，全栈模式由后续节点处理
+                        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_CREATE || codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT_EDIT) {
+                            String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_create_" + appId;
+                            vueProjectBuilder.buildProject(projectPath);
+                        }
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
-                        error.printStackTrace();
+                        log.error("代码生成流式输出异常", error);
                         sink.error(error);
                     })
                     .start();

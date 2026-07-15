@@ -33,12 +33,76 @@ public class ProjectBuilderNode {
 
                 if (frontendDir.exists() || backendDir.exists()) {
                     if (context.getTokenEmitter() != null) {
-                        context.getTokenEmitter().accept("\n> 🚀 开始全栈工程自动化构建...\n");
+                        context.getTokenEmitter().accept("\n> 🚀 开始全栈工程自动化构建与预览沙箱初始化...\n");
                     }
 
-                    // 1. 构建前端
+                    int backendPort = 8080; // 默认端口
+
+                    // 1. 构建与启动后端
+                    if (backendDir.exists()) {
+                        com.sht.zdaicode.core.builder.JavaProjectBuilder javaBuilder = SpringContextUtil.getBean(com.sht.zdaicode.core.builder.JavaProjectBuilder.class);
+                        if (context.getTokenEmitter() != null) {
+                            context.getTokenEmitter().accept("\n> ☕ 正在执行后端构建 (mvn clean package)...\n");
+                        }
+                        boolean javaSuccess = javaBuilder.buildProject(backendDir.getAbsolutePath());
+                        if (javaSuccess) {
+                            File targetDir = new File(backendDir, "target");
+                            log.info("Java 项目构建成功，target 目录: {}", targetDir.getAbsolutePath());
+                            if (context.getTokenEmitter() != null) {
+                                context.getTokenEmitter().accept("\n> ✅ 后端构建成功！准备启动微服务沙箱...\n");
+                            }
+
+                            // 初始化数据库并启动后台进程
+                            com.sht.zdaicode.core.preview.PreviewProcessManager processManager = SpringContextUtil.getBean(com.sht.zdaicode.core.preview.PreviewProcessManager.class);
+                            
+                            // 查找 jar 包
+                            File[] jars = targetDir.listFiles((dir, name) -> name.endsWith(".jar") && !name.endsWith("-sources.jar"));
+                            if (jars != null && jars.length > 0) {
+                                File jarFile = jars[0];
+                                
+                                // 初始化数据库
+                                String sqlFilePath = new File(generatedCodeDir, "database/schema.sql").getAbsolutePath();
+                                try {
+                                    processManager.initDatabase(context.getAppId(), sqlFilePath);
+                                } catch (Exception e) {
+                                    log.error("数据库初始化失败", e);
+                                    if (context.getTokenEmitter() != null) {
+                                        context.getTokenEmitter().accept("\n> ⚠️ 数据库初始化发生异常，系统将尝试继续启动...\n");
+                                    }
+                                }
+
+                                // 启动进程
+                                try {
+                                    backendPort = processManager.startBackendProcess(context.getAppId(), jarFile.getAbsolutePath());
+                                    if (context.getTokenEmitter() != null) {
+                                        context.getTokenEmitter().accept(String.format("\n> 🚀 后端微服务已成功运行在端口: **%d**\n", backendPort));
+                                    }
+                                } catch (Exception e) {
+                                    log.error("后台进程启动失败", e);
+                                    if (context.getTokenEmitter() != null) {
+                                        context.getTokenEmitter().accept("\n> ❌ 后台微服务启动失败: " + e.getMessage() + "\n");
+                                    }
+                                }
+                            }
+
+                        } else {
+                            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Java 后端项目构建失败");
+                        }
+                    }
+
+                    // 2. 构建前端
                     if (frontendDir.exists()) {
-                        VueProjectBuilder vueBuilder = SpringContextUtil.getBean(VueProjectBuilder.class);
+                        // 动态注入端口到 vite.config.ts
+                        File viteConfig = new File(frontendDir, "vite.config.ts");
+                        if (viteConfig.exists() && backendPort != 8080) {
+                            String content = cn.hutool.core.io.FileUtil.readUtf8String(viteConfig);
+                            // 尝试将默认的 8080 替换为真实的动态端口
+                            content = content.replace("8080", String.valueOf(backendPort));
+                            cn.hutool.core.io.FileUtil.writeUtf8String(content, viteConfig);
+                            log.info("已将前端代理端口动态修改为: {}", backendPort);
+                        }
+
+                        com.sht.zdaicode.core.builder.VueProjectBuilder vueBuilder = SpringContextUtil.getBean(com.sht.zdaicode.core.builder.VueProjectBuilder.class);
                         if (context.getTokenEmitter() != null) {
                             context.getTokenEmitter().accept("\n> 💻 正在执行前端构建 (npm run build)...\n");
                         }
@@ -46,33 +110,16 @@ public class ProjectBuilderNode {
                         if (vueSuccess) {
                             log.info("Vue 项目构建成功，dist 目录: {}", new File(frontendDir, "dist").getAbsolutePath());
                             if (context.getTokenEmitter() != null) {
-                                context.getTokenEmitter().accept("\n> ✅ 前端构建成功！\n");
+                                context.getTokenEmitter().accept("\n> ✅ 前端构建成功！全栈项目已准备就绪！\n");
                             }
                         } else {
                             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败");
                         }
                     }
 
-                    // 2. 构建后端
-                    if (backendDir.exists()) {
-                        JavaProjectBuilder javaBuilder = SpringContextUtil.getBean(JavaProjectBuilder.class);
-                        if (context.getTokenEmitter() != null) {
-                            context.getTokenEmitter().accept("\n> ☕ 正在执行后端构建 (mvn clean package)...\n");
-                        }
-                        boolean javaSuccess = javaBuilder.buildProject(backendDir.getAbsolutePath());
-                        if (javaSuccess) {
-                            log.info("Java 项目构建成功，target 目录: {}", new File(backendDir, "target").getAbsolutePath());
-                            if (context.getTokenEmitter() != null) {
-                                context.getTokenEmitter().accept("\n> ✅ 后端构建成功！\n");
-                            }
-                        } else {
-                            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Java 后端项目构建失败");
-                        }
-                    }
-
                 } else {
                     // 退化为普通单体前端 Vue 项目构建 (向后兼容)
-                    VueProjectBuilder vueBuilder = SpringContextUtil.getBean(VueProjectBuilder.class);
+                    com.sht.zdaicode.core.builder.VueProjectBuilder vueBuilder = SpringContextUtil.getBean(com.sht.zdaicode.core.builder.VueProjectBuilder.class);
                     if (context.getTokenEmitter() != null) {
                         context.getTokenEmitter().accept("\n> 💻 正在执行单工程构建 (npm run build)...\n");
                     }

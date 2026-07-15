@@ -360,20 +360,17 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
             log.info("尝试本地启动 Java 后端应用: {}", jarFile.getAbsolutePath());
             
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "java",
-                    "-jar",
-                    jarFile.getAbsolutePath()
-            );
+            // 使用 PreviewProcessManager 启动
+            com.sht.zdaicode.core.preview.PreviewProcessManager processManager = com.sht.zdaicode.utils.SpringContextUtil.getBean(com.sht.zdaicode.core.preview.PreviewProcessManager.class);
             
-            // 运行日志输出到 backend/run.log
-            File logFile = new File(sourceDirPath, "backend" + File.separator + "run.log");
-            processBuilder.redirectOutput(logFile);
-            processBuilder.redirectError(logFile);
-            
-            // 异步拉起进程
-            Process process = processBuilder.start();
-            log.info("Java 后端应用已在后台启动，PID: {}", process.pid());
+            // 如果后端进程未运行，或者需要重新拉起
+            try {
+                processManager.startBackendProcess(appId, jarFile.getAbsolutePath());
+                log.info("Java 后端应用已通过 PreviewProcessManager 在后台启动");
+            } catch (Exception e) {
+                log.error("PreviewProcessManager 启动 Java 后端异常", e);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "本地启动 Java 后端失败: " + e.getMessage());
+            }
             
         } catch (Exception e) {
             log.error("启动 Java 后端失败", e);
